@@ -16,10 +16,14 @@ Look at the image and reply with ONLY one JSON object, no other text:
 
 Rules:
 - target_x and target_y give where the target is in the image, as relative
-  coordinates from 0 to 1000. x=0 is the left edge, x=1000 the right edge,
-  y=0 the top edge, y=1000 the bottom edge.
-- If the target is not visible, set target_visible to false and both
-  target_x and target_y to null.
-- recommended_direction is where the drone should head next to make progress.
-- If you are unsure, lower the confidence and explain why in uncertainties.
-  Do not guess."""
+  coordinates from 0 to 1000 (x=0 left edge, x=1000 right edge,
+  y=0 top edge, y=1000 bottom edge). Point at the CENTER of the target.
+- Only set target_visible to true if you can clearly see the target. If it
+  is not visible, set target_visible to false and target_x, target_y to null.
+- recommended_direction: if the target is visible, the direction toward it
+  (use "forward" if it is roughly centered). If it is not visible, the
+  direction of the most open path for exploring.
+- confidence means how sure you are that your WHOLE answer is correct.
+  Clearly seeing an empty corridor with no target is a confident answer:
+  use 0.8 or higher. Use low confidence only when the image is dark, blurry,
+  or ambiguous. Explain doubts in uncertainties."""
