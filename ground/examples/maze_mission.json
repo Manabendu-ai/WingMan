@@ -1,0 +1,13 @@
+{
+  "mission_id": "m_001",
+  "goal": "reach the maze exit",
+  "target": "maze exit",
+  "steps": [
+    {"action": "takeoff", "altitude_m": 1.0},
+    {"action": "explore", "strategy": "wall_following", "until": "target_found"},
+    {"action": "approach_target", "standoff_m": 0.5},
+    {"action": "hover", "duration_s": 5}
+  ],
+  "limits": {"max_speed_mps": 0.5, "max_altitude_m": 2.0, "max_time_s": 300},
+  "success_condition": "drone is at the exit and the exit is confirmed"
+}
