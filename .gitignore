@@ -1,1 +1,36 @@
-vlm/eval/out/
+# Python
+.venv/
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Models (too big for git)
+models/
+*.gguf
+*.safetensors
+*.bin
+*.pt
+*.onnx
+
+# Secrets (never commit API keys)
+.env
+*.key
+
+# Results and logs
+results.json
+*.log
+
+# IDEs
+.idea/
+.vscode/
+
+# ROS / build output
+build/
+install/
+log/
+devel/
+
+# OS
+.DS_Store
+ground/out/
