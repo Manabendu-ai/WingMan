@@ -1,6 +1,7 @@
 pyproject.toml
 src/wingman_onboard/__init__.py
 src/wingman_onboard/executor.py
+src/wingman_onboard/sim.py
 src/wingman_onboard.egg-info/PKG-INFO
 src/wingman_onboard.egg-info/SOURCES.txt
 src/wingman_onboard.egg-info/dependency_links.txt
