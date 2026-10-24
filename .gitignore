@@ -33,3 +33,4 @@ devel/
 
 # OS
 .DS_Store
+ground/out/
