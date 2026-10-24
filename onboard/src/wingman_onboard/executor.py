@@ -269,7 +269,8 @@ class MissionExecutor:
             "target_found": self.target_goal is not None,
             "target_goal": ([round(float(v), 2) for v in self.target_goal]
                             if self.target_goal is not None else None),
-            "vlm_online": self.bridge.tick(now).vlm_online,
+            "vlm_online": (self.bridge.tick(now).vlm_online
+                           if self.vlm_request() is not None else None),
             "last_observation": self._last_obs,
             "failure_reason": self.failure_reason,
             "events": self._events[-10:],

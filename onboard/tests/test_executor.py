@@ -278,3 +278,8 @@ def test_fail_action_land_is_configurable():
     ex.start(0)
     ex.tick(31, Feedback(altitude_m=0.0))
     assert ex.state == State.FAILED and d.calls[-1] == ("land",)
+
+
+def test_status_vlm_online_is_none_when_vlm_not_needed():
+    ex, _ = make()
+    assert ex.status(0)["vlm_online"] is None
