@@ -17,7 +17,7 @@ h1 span{color:var(--amber)}
 #conn{font-size:12px;color:var(--dim)}#conn.up{color:var(--ok)}
 #abort{margin-left:auto;background:var(--bad);color:#fff;border:0;padding:8px 22px;font:700 14px var(--mono);letter-spacing:.2em;cursor:pointer}
 #abort:focus-visible,button:focus-visible,textarea:focus-visible,input:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
-main{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;padding:12px 16px;align-items:start}
+main{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;padding:12px 16px;align-items:stretch}
 .col,#right{min-width:0}
 .col{display:flex;flex-direction:column;gap:12px}
 #right{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-items:stretch}
@@ -28,7 +28,9 @@ section{background:var(--panel);border:1px solid var(--line)}
 section>h2{margin:0;padding:6px 12px;font-size:11px;letter-spacing:.2em;color:var(--dim);border-bottom:1px solid var(--line);font-weight:600}
 .body{padding:12px}
 #cam{display:block;width:100%;aspect-ratio:4/3;background:#000;object-fit:contain}
-#map{display:block;width:100%;height:auto;image-rendering:pixelated;background:var(--map-unk)}
+.mapsec{display:flex;flex-direction:column}
+.mapwrap{position:relative;flex:1;min-height:260px;background:var(--map-unk)}
+#map{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;image-rendering:pixelated}
 textarea,input[type=text]{width:100%;background:var(--bg);color:var(--ink);border:1px solid var(--line);padding:8px;font:14px var(--mono)}
 textarea{resize:vertical;min-height:64px}
 .row{display:flex;gap:8px;margin-top:8px;align-items:center}
@@ -56,7 +58,7 @@ dt{color:var(--dim)}dd{margin:0}
 </header>
 <main>
   <section><h2>CAMERA · VLM</h2><img id="cam" alt="camera stream with detected target circled"></section>
-  <section><h2>MAP · 2D OCCUPANCY</h2><canvas id="map" width="630" height="330"></canvas></section>
+  <section class="mapsec"><h2>MAP · 2D OCCUPANCY</h2><div class="mapwrap"><canvas id="map" width="630" height="330"></canvas></div></section>
   <div class="col">
     <section><h2>MISSION REQUEST</h2><div class="body">
       <textarea id="req" maxlength="500" placeholder="e.g. take off, find the red box, then hover over it"></textarea>
