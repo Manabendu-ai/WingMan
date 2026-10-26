@@ -75,3 +75,17 @@ def test_config_from_env_builds_chain(monkeypatch):
     monkeypatch.setenv("LLM_MODEL", "m1")
     monkeypatch.setenv("LLM_FALLBACK_MODELS", "m2, m1 ,m3")
     assert LLMConfig.from_env().models == ["m1", "m2", "m3"]
+
+
+def test_hung_request_hits_deadline_and_falls_back():
+    import time
+
+    def post(url, headers=None, json=None, timeout=None):
+        if json["model"] == "a":
+            time.sleep(2)
+        return FakeResp(200, "ok")
+
+    cfg = LLMConfig("http://x", "k", ["a", "b"], retries_per_model=0,
+                    deadline_s=0.2)
+    c = LLMClient(cfg, post=post, sleep=lambda s: None)
+    assert c.complete(MSG) == "ok" and c.last_model == "b"
