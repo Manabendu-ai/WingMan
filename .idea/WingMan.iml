@@ -6,6 +6,7 @@
       <sourceFolder url="file://$MODULE_DIR$/vlm/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/ground" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/ground/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/onboard/src" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/vlm/.venv" />
     </content>
     <orderEntry type="jdk" jdkName="Python 3.12 (WingMan)" jdkType="Python SDK" />
