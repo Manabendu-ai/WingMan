@@ -59,7 +59,8 @@ def main():
     if a.docs:
         print(f"  API docs:  http://{a.host}:{a.port}/docs   (click Authorize, paste the token)")
     print()
-    uvicorn.run(app, host=a.host, port=a.port, log_level="warning")
+    uvicorn.run(app, host=a.host, port=a.port, log_level="warning",
+                timeout_graceful_shutdown=2)
 
 
 if __name__ == "__main__":
