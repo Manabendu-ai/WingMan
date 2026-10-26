@@ -260,4 +260,11 @@ scripts/
 
 ## License
 
-License to be specified.
+Copyright (c) 2026 Manabendu Karfa and Archisman Rana. All rights reserved.
+ 
+This software and its associated documentation are proprietary and confidential. No part of this repository may be copied, modified, merged, published, distributed, sublicensed, sold, or used, in whole or in part, for any purpose without the prior written permission of the copyright holders, Manabendu Karfa and Archisman Rana.
+ 
+The software is provided "as is", without warranty of any kind, express or implied, including but not limited to the warranties of merchantability, fitness for a particular purpose, and non-infringement. In no event shall the copyright holders be liable for any claim, damages, or other liability arising from, out of, or in connection with the software or its use. This software controls a flying vehicle, and any use of it with physical hardware is entirely at the user's own risk.
+ 
+For permission requests, contact the copyright holders.
+ 
