@@ -1,5 +1,6 @@
 """Small OpenAI-compatible chat client with a model fallback chain."""
 import os
+import threading
 import time
 from dataclasses import dataclass
 from typing import Callable, Dict, List, Optional
@@ -23,6 +24,7 @@ class LLMConfig:
     max_tokens: int = 3000
     temperature: float = 0.2
     timeout_s: float = 90.0
+    deadline_s: float = 45.0      # hard wall-clock limit per call
     retries_per_model: int = 1
 
     @classmethod
@@ -36,6 +38,7 @@ class LLMConfig:
             api_key=os.getenv("LLM_API_KEY", ""),
             models=[primary] + extra,
             max_tokens=int(os.getenv("LLM_MAX_TOKENS", "3000")),
+            deadline_s=float(os.getenv("LLM_DEADLINE_S", "45")),
         )
 
 
@@ -46,6 +49,26 @@ class LLMClient:
         self._post = post or requests.post
         self._sleep = sleep
         self.last_model: Optional[str] = None
+
+    def _call(self, url, headers, payload):
+        """POST with a hard deadline (requests' timeout is per-read only)."""
+        box = {}
+
+        def run():
+            try:
+                box["r"] = self._post(url, headers=headers, json=payload,
+                                      timeout=self.cfg.timeout_s)
+            except BaseException as e:      # re-raised in the caller's thread
+                box["e"] = e
+
+        t = threading.Thread(target=run, daemon=True)
+        t.start()
+        t.join(self.cfg.deadline_s)
+        if t.is_alive():
+            raise requests.Timeout("deadline exceeded")
+        if "e" in box:
+            raise box["e"]
+        return box["r"]
 
     def complete(self, messages: List[Dict[str, str]]) -> str:
         c = self.cfg
@@ -60,8 +83,7 @@ class LLMClient:
             for attempt in range(c.retries_per_model + 1):
                 last_try = attempt == c.retries_per_model
                 try:
-                    r = self._post(url, headers=headers, json=payload,
-                                   timeout=c.timeout_s)
+                    r = self._call(url, headers, payload)
                 except requests.RequestException as e:
                     errors.append(f"{model}: {type(e).__name__}")
                     if not last_try:
