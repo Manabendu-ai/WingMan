@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WINGMAN · ground control</title>
+<style>
+:root{--bg:#f2f0ea;--panel:#fbfaf6;--line:#cfcabd;--ink:#1d1f22;--dim:#6b6a63;--amber:#a85d00;--ok:#1f7a3d;--bad:#b3261e;--map-unk:#dcd8cc;--map-free:#fbfaf6;--map-occ:#2a2d33;--mono:ui-monospace,"JetBrains Mono","SF Mono",Menlo,Consolas,monospace}
+@media (prefers-color-scheme:dark){:root{--bg:#0d0f12;--panel:#14171c;--line:#2a2f37;--ink:#d9dde3;--dim:#7d8590;--amber:#ffb000;--ok:#3ddc84;--bad:#ff4d4d;--map-unk:#0a0b0d;--map-free:#1d2a2a;--map-occ:#5b6572}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 var(--mono)}
+header{display:flex;align-items:center;gap:16px;padding:10px 16px;border-bottom:1px solid var(--line)}
+h1{font-size:15px;letter-spacing:.28em;margin:0;font-weight:700}
+h1 span{color:var(--amber)}
+.badge{padding:2px 10px;border:1px solid var(--line);font-size:12px;letter-spacing:.12em;text-transform:uppercase}
+.badge.run{color:var(--amber);border-color:var(--amber)}.badge.wait{color:var(--ok);border-color:var(--ok)}
+#conn{font-size:12px;color:var(--dim)}#conn.up{color:var(--ok)}
+#abort{margin-left:auto;background:var(--bad);color:#fff;border:0;padding:8px 22px;font:700 14px var(--mono);letter-spacing:.2em;cursor:pointer}
+#abort:focus-visible,button:focus-visible,textarea:focus-visible,input:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+main{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;padding:12px 16px;align-items:stretch}
+.col,#right{min-width:0}
+.col{display:flex;flex-direction:column;gap:12px}
+#right{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-items:stretch}
+#right section{display:flex;flex-direction:column}
+#right .body{flex:1}
+@media (max-width:900px){main,#right{grid-template-columns:1fr}}
+section{background:var(--panel);border:1px solid var(--line)}
+section>h2{margin:0;padding:6px 12px;font-size:11px;letter-spacing:.2em;color:var(--dim);border-bottom:1px solid var(--line);font-weight:600}
+.body{padding:12px}
+#cam{display:block;width:100%;aspect-ratio:4/3;background:#000;object-fit:contain}
+.mapsec{display:flex;flex-direction:column}
+.mapwrap{position:relative;flex:1;min-height:260px;background:var(--map-unk)}
+#map{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;image-rendering:pixelated}
+textarea,input[type=text]{width:100%;background:var(--bg);color:var(--ink);border:1px solid var(--line);padding:8px;font:14px var(--mono)}
+textarea{resize:vertical;min-height:64px}
+.row{display:flex;gap:8px;margin-top:8px;align-items:center}
+button{background:var(--panel);color:var(--ink);border:1px solid var(--ink);padding:6px 16px;font:600 13px var(--mono);cursor:pointer}
+button.primary{background:var(--amber);border-color:var(--amber);color:#111}
+button:disabled{opacity:.4;cursor:not-allowed}
+.hint{color:var(--dim);font-size:12px}
+#pending{border-color:var(--amber)}
+#pending pre{margin:0 0 8px;white-space:pre-wrap;font:13px var(--mono)}
+dl{display:grid;grid-template-columns:auto 1fr;gap:2px 16px;margin:0}
+dt{color:var(--dim)}dd{margin:0}
+#result{padding:10px 12px;border:1px solid var(--line);font-weight:600}
+#result.success{color:var(--ok);border-color:var(--ok)}#result.fail{color:var(--bad);border-color:var(--bad)}
+#log{height:300px;overflow:auto;font-size:12px;padding:8px 12px}
+#log div{white-space:pre-wrap;word-break:break-word}#log .t{color:var(--dim)}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<header>
+  <h1>WING<span>MAN</span></h1>
+  <span id="phase" class="badge">connecting</span>
+  <span id="conn">○ offline</span>
+  <button id="abort" title="Stop the mission now">ABORT</button>
+</header>
+<main>
+  <section><h2>CAMERA · VLM</h2><img id="cam" alt="camera stream with detected target circled"></section>
+  <section class="mapsec"><h2>MAP · 2D OCCUPANCY</h2><div class="mapwrap"><canvas id="map" width="630" height="330"></canvas></div></section>
+  <div class="col">
+    <section><h2>MISSION REQUEST</h2><div class="body">
+      <textarea id="req" maxlength="500" placeholder="e.g. take off, find the red box, then hover over it"></textarea>
+      <div class="row">
+        <button id="send" class="primary">PLAN MISSION</button>
+        <button id="mic" hidden title="Dictate: fills the box, never sends">🎤 DICTATE</button>
+        <span class="hint" id="micnote" hidden>Chrome sends audio to Google. Check the text before planning.</span>
+      </div></div></section>
+    <section id="pending" hidden><h2>OPERATOR DECISION</h2><div class="body">
+      <pre id="pdetail"></pre>
+      <div id="appr"><div class="row">
+        <button id="yes" class="primary">APPROVE &amp; SEND</button><button id="no">REJECT</button></div></div>
+      <div id="clar"><input type="text" id="ans" maxlength="300" placeholder="your answer">
+        <div class="row"><button id="sendans" class="primary">ANSWER</button></div></div>
+    </div></section>
+    <div id="result" hidden></div>
+  </div>
+  <div id="right">
+    <section><h2>TELEMETRY</h2><div class="body"><dl id="tele"></dl></div></section>
+    <section><h2>MISSION LOGS</h2><div id="log"></div></section>
+  </div>
+</main>
+<script>
+"use strict";
+const $ = id => document.getElementById(id);
+let token = new URLSearchParams(location.search).get("token");
+try { if (token) sessionStorage.setItem("wm_token", token); else token = sessionStorage.getItem("wm_token"); } catch (e) {}
+if (!token) document.body.insertAdjacentHTML("afterbegin", "<p style='padding:16px;color:#ff4d4d'>No token. Open the URL printed by the server (it ends in ?token=…).</p>");
+
+let phase = "idle", lastLogKey = "", lastPendingId = null;
+
+async function api(path, body) {
+  const r = await fetch(path, { method: body === undefined ? "GET" : "POST",
+    headers: { "X-Token": token || "", "Content-Type": "application/json" },
+    body: body === undefined ? undefined : JSON.stringify(body) });
+  if (!r.ok) { const j = await r.json().catch(() => ({})); throw new Error(j.detail || r.status); }
+  return r.json();
+}
+const act = (p, b) => api(p, b).catch(e => alert("Request failed: " + e.message));
+
+$("cam").src = "/camera.mjpg?token=" + encodeURIComponent(token || "");
+$("abort").onclick = () => act("/api/abort", {});
+$("send").onclick = () => { const t = $("req").value.trim(); if (t) act("/api/mission", { request: t }); };
+$("yes").onclick = () => act("/api/approve", { approve: true });
+$("no").onclick = () => act("/api/approve", { approve: false });
+$("sendans").onclick = () => { const t = $("ans").value.trim(); if (t) { act("/api/answer", { text: t }); $("ans").value = ""; } };
+$("ans").addEventListener("keydown", e => { if (e.key === "Enter") $("sendans").click(); });
+
+// Voice: fills the text box only. The operator reads it, then presses PLAN MISSION.
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+if (SR) {
+  $("mic").hidden = false; $("micnote").hidden = false;
+  $("mic").onclick = () => {
+    const rec = new SR(); rec.lang = "en-US"; rec.interimResults = false;
+    $("mic").disabled = true;
+    rec.onresult = e => { $("req").value = e.results[0][0].transcript; };
+    rec.onend = rec.onerror = () => { $("mic").disabled = false; };
+    rec.start();
+  };
+}
+
+function row(dl, k, v) {
+  const dt = document.createElement("dt"), dd = document.createElement("dd");
+  dt.textContent = k; dd.textContent = v; dl.append(dt, dd);
+}
+
+function render(s) {
+  phase = s.phase;
+  const b = $("phase");
+  b.textContent = phase.replace("_", " ");
+  b.className = "badge" + (phase === "executing" || phase === "planning" ? " run" : phase.startsWith("awaiting") ? " wait" : "");
+  const busy = phase !== "idle" && phase !== "done";
+  $("send").disabled = busy; $("req").disabled = busy;
+
+  const p = s.pending;
+  $("pending").hidden = !p;
+  if (p) {
+    $("appr").hidden = p.kind !== "approval"; $("clar").hidden = p.kind !== "clarification";
+    $("pdetail").textContent = p.kind === "approval" ? p.detail : p.prompt;
+    if (p.kind === "clarification" && p.id !== lastPendingId) $("ans").focus();
+    lastPendingId = p.id;
+  }
+
+  const r = $("result");
+  r.hidden = !s.result;
+  if (s.result) {
+    const ok = s.result.outcome === "success";
+    r.className = ok ? "success" : "fail";
+    r.textContent = "RESULT: " + s.result.outcome + (s.result.reason ? " — " + s.result.reason : "");
+  }
+
+  const t = s.telemetry || {}, dl = $("tele"), o = s.last_obs || t.last_observation;
+  dl.replaceChildren();
+  if (t.state) {
+    row(dl, "mission", t.mission_id);
+    row(dl, "state", t.state);
+    row(dl, "step", `${(t.step_index ?? 0) + 1}/${t.steps_total} ${t.step_action || "-"}`);
+    row(dl, "elapsed", `${t.elapsed_s}s`);
+    row(dl, "altitude", `${t.altitude_m} m`);
+    row(dl, "mode", t.mode);
+    row(dl, "target", t.target_found ? "FOUND " + JSON.stringify(t.target_goal) : "searching");
+    row(dl, "vlm", t.vlm_online === null || t.vlm_online === undefined ? "-" : t.vlm_online ? "online" : "SILENT");
+    if (o) row(dl, "seen", `${o.scene} · visible=${o.target_visible} · ${Number(o.confidence).toFixed(2)}`);
+  } else row(dl, "—", "no active mission");
+
+  const key = s.log.length + "|" + (s.log.length ? s.log[s.log.length - 1].msg : "");
+  if (key !== lastLogKey) {
+    lastLogKey = key;
+    const box = $("log"), stick = box.scrollTop + box.clientHeight >= box.scrollHeight - 30;
+    box.replaceChildren();
+    for (const l of s.log) {
+      const d = document.createElement("div"), ts = document.createElement("span");
+      ts.className = "t"; ts.textContent = l.t + "  "; d.append(ts, document.createTextNode(l.msg)); box.append(d);
+    }
+    if (stick) box.scrollTop = box.scrollHeight;
+  }
+}
+
+// ---- map: ROS OccupancyGrid layout, data[gy*w+gx], gy=0 is the bottom row ----
+function drawMap(m) {
+  const cv = $("map"), cs = Math.max(1, Math.floor(630 / m.width));
+  cv.width = m.width * cs; cv.height = m.height * cs;
+  const g = cv.getContext("2d"), css = getComputedStyle(document.documentElement);
+  const col = { "-1": css.getPropertyValue("--map-unk"), "0": css.getPropertyValue("--map-free"), "100": css.getPropertyValue("--map-occ") };
+  for (let gy = 0; gy < m.height; gy++) for (let gx = 0; gx < m.width; gx++) {
+    const v = m.data[gy * m.width + gx];
+    g.fillStyle = col[v] || col["-1"];
+    g.fillRect(gx * cs, (m.height - 1 - gy) * cs, cs, cs);
+  }
+  const px = (x, y) => [x / m.resolution * cs, (m.height - y / m.resolution) * cs];
+  const amber = css.getPropertyValue("--amber");
+  if (m.path.length > 1) {
+    g.strokeStyle = amber; g.lineWidth = 2; g.beginPath();
+    m.path.forEach((q, i) => { const [x, y] = px(q[0], q[1]); i ? g.lineTo(x, y) : g.moveTo(x, y); });
+    g.stroke();
+  }
+  const [x, y] = px(m.pose.x, m.pose.y);
+  g.save(); g.translate(x, y); g.rotate(-m.pose.yaw);
+  g.fillStyle = amber; g.beginPath(); g.moveTo(cs * .8, 0); g.lineTo(-cs * .5, cs * .45); g.lineTo(-cs * .5, -cs * .45); g.closePath(); g.fill();
+  g.restore();
+}
+
+let lastMap = null;
+function connect() {
+  const ws = new WebSocket((location.protocol === "https:" ? "wss://" : "ws://") + location.host + "/ws?token=" + encodeURIComponent(token || ""));
+  ws.onopen = () => { $("conn").textContent = "● live"; $("conn").className = "up"; };
+  ws.onmessage = e => { const s = JSON.parse(e.data); render(s); if (s.map) { lastMap = s.map; drawMap(s.map); } };
+  ws.onclose = () => { $("conn").textContent = "○ offline, retrying"; $("conn").className = ""; setTimeout(connect, 1500); };
+}
+if (token) connect();
+</script>
+</body>
+</html>
