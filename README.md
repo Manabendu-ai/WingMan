@@ -125,6 +125,7 @@ source vlm/.venv/bin/activate
 pip install -e ground
 pip install -e vlm
 pip install -e onboard
+pip install -e dashboard
 ```
 
 ## Configuration
@@ -138,6 +139,8 @@ LLM_MODEL=nvidia/nemotron-3-ultra-550b-a55b:free
 LLM_FALLBACK_MODELS=nvidia/nemotron-3.5-lightning:free,nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free
 LLM_MAX_TOKENS=3000
 LLM_DEADLINE_S=45
+VLM_URL=http://127.0.0.1:8080/v1/chat/completions
+VLM_MODEL=qwen3-vl
 ```
 
 | Variable | Description |
@@ -148,6 +151,8 @@ LLM_DEADLINE_S=45
 | `LLM_FALLBACK_MODELS` | Comma-separated models tried in order if the primary fails |
 | `LLM_MAX_TOKENS` | Maximum tokens per completion |
 | `LLM_DEADLINE_S` | Hard wall-clock limit per request, in seconds |
+| `VLM_URL` | OpenAI-compatible VLM chat-completions endpoint |
+| `VLM_MODEL` | VLM model name sent to the local server |
 
 The client retries rate-limited and server-error responses, then moves to the next model on errors, empty output, or a missed deadline. Authentication errors stop immediately.
 
@@ -163,18 +168,32 @@ python scripts/run_wingman.py "take off, find the red box, then hover over it"
 
 The script plans a mission, displays it for approval, flies it on the simulated drone, and saves a run log under `ground/out/`.
 
-To demonstrate failure recovery, stall the first takeoff and let the replanner propose a new mission:
+To demonstrate the aircraft-fault policy, stall the first takeoff. The
+dashboard/session reports this as an abort rather than automatically
+replanning:
 
 ```bash
-python scripts/run_wingman.py --inject-failure "take off, find the red box, then hover over it"
+python scripts/run_wingman.py --break-takeoff-once "take off, find the red box, then hover over it"
 ```
 
 | Option | Description |
 |---|---|
 | `--yes` | Auto-approve missions |
-| `--inject-failure` | Stall the first takeoff to exercise replanning |
+| `--break-takeoff-once` | Stall the first takeoff to exercise the aircraft-fault policy |
+| `--dt N` | Simulated seconds per executor tick (default 1.0) |
 | `--max-replans N` | Maximum number of replans (default 2) |
-| `--images PATH` | Folder of images used as the simulated camera |
+
+The runner uses the sample images in `vlm/eval/data` as its simulated camera.
+The dashboard accepts a custom image folder with `--frames`:
+
+```bash
+python -m wingman_dashboard --mock
+python -m wingman_dashboard --frames vlm/eval/data
+```
+
+The dashboard binds to `127.0.0.1` by default and prints a tokenized URL.
+Every dashboard API route except `/api/health` requires the token. Use
+`--mock` to run without an LLM key or VLM server.
 
 To generate a mission without flying it:
 
@@ -227,11 +246,15 @@ Use a single monotonic clock for every `now` value. Replace the simulated compon
 ## Testing
 
 ```bash
-cd ground && python -m pytest -q    # planner, replanner, validator, LLM client
-cd ../onboard && python -m pytest -q  # mission executor
+source vlm/.venv/bin/activate
+python -m pytest -q ground/tests    # planner, replanner, validator, LLM client
+python -m pytest -q onboard/tests   # mission executor and simulation
+python -m pytest -q vlm/tests       # VLM schema, projection, and goal bridge
+python -m pytest -q dashboard/tests # dashboard API, map, camera, and live link
 ```
 
-Tests use fake LLM and drone implementations and do not require network access, a GPU, or a simulator.
+Tests use fake LLM/VLM and drone implementations and do not require network
+access, a GPU, or a simulator.
 
 ## Repository Layout
 
@@ -249,6 +272,9 @@ vlm/
   eval/data/            sample images used by the simulation
 scripts/
   run_wingman.py        end-to-end runner
+dashboard/
+  src/wingman_dashboard/ FastAPI dashboard, live link, map, and camera
+  static/index.html     browser control interface
 ```
 
 ## Known Limitations
