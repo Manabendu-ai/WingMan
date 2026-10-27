@@ -1,4 +1,7 @@
-<h1 align="center">WingMan</h1>
+<div align = "center">
+    <img src = "assest/logo.png" width="40%">
+</div>
+
 
 <p align="center">
   <strong>Autonomous indoor drone missions from plain-language requests</strong><br>
