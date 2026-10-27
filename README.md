@@ -249,6 +249,11 @@ vlm/
   eval/data/            sample images used by the simulation
 scripts/
   run_wingman.py        end-to-end runner
+dashboard/
+  src/wingman_dashboard/ FastAPI dashboard, live link, map, and camera
+  static/index.html     browser control interface
+ros2/
+  wingman_ros/          ROS 2 Humble map, RGB-D, PX4 telemetry, and health bridge
 ```
 
 ## Known Limitations
@@ -257,6 +262,9 @@ scripts/
 - After a failure the executor holds position indefinitely by default. A hover timeout followed by landing is planned for hardware.
 - The default LLM chain uses free endpoints, which may be rate limited, change, or become unavailable. Verify the chain before any demonstration.
 - Replanning relies on the language model's judgment and is not guaranteed to resolve the underlying fault.
+- ROS 2 telemetry and perception integration is available under `ros2/wingman_ros`.
+- Autonomous ROS command publication is intentionally disabled until the
+  EGO-Planner goal and PX4 command interfaces are finalized and tested.
 
 ## License
 
