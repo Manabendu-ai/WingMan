@@ -19,6 +19,33 @@ exposes it over REST + WebSocket + MJPEG. The drone is simulated
 It prints a URL containing the access token and binds to 127.0.0.1 only.
 Flags: `--token`, `--port`, `--tick` (real seconds per sim tick), `--break-takeoff-once`.
 
+### Remote ROS monitor (no ROS on this laptop)
+
+The browser can connect directly to a ROS 2 machine running `rosbridge_server`
+and `web_video_server`. ROS does not need to be installed on the laptop
+running the browser. Start the WingMan ROS bridge on the ROS machine first,
+then open the dashboard with:
+
+```text
+http://DASHBOARD_HOST:8000/?ros_ws=ws%3A%2F%2FROS_HOST%3A9090&video=http%3A%2F%2FROS_HOST%3A8080%2Fstream%3Ftopic%3D%252Fcamera%252Fcolor%252Fimage_raw
+```
+
+In this mode the site is read-only. It displays the remote RGB stream, map,
+odometry/PX4 telemetry, RGB-D metadata, and stale-data health. Mission
+commands remain disabled until the ROS command interfaces are finalized.
+
+On the ROS machine, start:
+
+```bash
+ros2 launch rosbridge_server rosbridge_websocket_launch.xml
+ros2 run web_video_server web_video_server
+ros2 run wingman_ros bridge
+```
+
+The browser must be able to reach ports `9090` and `8080` on `ROS_HOST`.
+For a public deployment, place these services behind a VPN or authenticated
+reverse proxy; do not expose rosbridge directly to the internet.
+
 ## API (every route needs header `X-Token` or `?token=`)
 | Route | Purpose |
 |---|---|
