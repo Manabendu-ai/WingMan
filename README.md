@@ -269,6 +269,21 @@ ros2/
 - Autonomous ROS command publication is intentionally disabled until the
   EGO-Planner goal and PX4 command interfaces are finalized and tested.
 
+### Remote website monitoring without ROS on the laptop
+
+ROS only needs to run on the simulator/flight computer. The browser can
+connect to that machine through `rosbridge_server` and `web_video_server`.
+Open the dashboard in remote monitor mode:
+
+```text
+http://DASHBOARD_HOST:8000/?ros_ws=ws%3A%2F%2FROS_HOST%3A9090&video=http%3A%2F%2FROS_HOST%3A8080%2Fstream%3Ftopic%3D%252Fcamera%252Fcolor%252Fimage_raw
+```
+
+This mode is read-only and shows the remote camera, map, telemetry, and
+stale-data warnings. ROS is not installed on the laptop. The ROS host must
+run `rosbridge_server`, `web_video_server`, and `wingman_ros`; keep ports
+9090 and 8080 private or protect them with a VPN/authenticated proxy.
+
 ## License
 
 Copyright (c) 2026 Manabendu Karfa and Archisman Rana. All rights reserved.
