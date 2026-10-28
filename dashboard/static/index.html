@@ -81,12 +81,17 @@ dt{color:var(--dim)}dd{margin:0}
     <section><h2>MISSION LOGS</h2><div id="log"></div></section>
   </div>
 </main>
+<script src="https://cdn.jsdelivr.net/npm/roslib/build/roslib.min.js"></script>
 <script>
 "use strict";
 const $ = id => document.getElementById(id);
-let token = new URLSearchParams(location.search).get("token");
+const params = new URLSearchParams(location.search);
+const remoteRosUrl = params.get("ros_ws");
+const remoteVideoUrl = params.get("video");
+const remoteMode = Boolean(remoteRosUrl);
+let token = params.get("token");
 try { if (token) sessionStorage.setItem("wm_token", token); else token = sessionStorage.getItem("wm_token"); } catch (e) {}
-if (!token) document.body.insertAdjacentHTML("afterbegin", "<p style='padding:16px;color:#ff4d4d'>No token. Open the URL printed by the server (it ends in ?token=…).</p>");
+if (!remoteMode && !token) document.body.insertAdjacentHTML("afterbegin", "<p style='padding:16px;color:#ff4d4d'>No token. Open the URL printed by the server (it ends in ?token=…).</p>");
 
 let phase = "idle", lastLogKey = "", lastPendingId = null;
 
@@ -99,7 +104,18 @@ async function api(path, body) {
 }
 const act = (p, b) => api(p, b).catch(e => alert("Request failed: " + e.message));
 
-$("cam").src = "/camera.mjpg?token=" + encodeURIComponent(token || "");
+if (remoteMode) {
+  document.title = "WINGMAN · remote ROS monitor";
+  $("cam").src = remoteVideoUrl || "";
+  $("send").disabled = true;
+  $("abort").disabled = true;
+  $("send").title = "Mission commands are disabled in remote monitor mode";
+  $("abort").title = "Mission commands are disabled in remote monitor mode";
+  $("pending").hidden = true;
+  $("result").hidden = true;
+} else {
+  $("cam").src = "/camera.mjpg?token=" + encodeURIComponent(token || "");
+}
 $("abort").onclick = () => act("/api/abort", {});
 $("send").onclick = () => { const t = $("req").value.trim(); if (t) act("/api/mission", { request: t }); };
 $("yes").onclick = () => act("/api/approve", { approve: true });
@@ -179,6 +195,8 @@ function render(s) {
 
 // ---- map: ROS OccupancyGrid layout, data[gy*w+gx], gy=0 is the bottom row ----
 function drawMap(m) {
+  if (!m || !Number.isInteger(m.width) || !Number.isInteger(m.height)
+      || !Array.isArray(m.data) || m.data.length < m.width * m.height) return;
   const cv = $("map"), cs = Math.max(1, Math.floor(630 / m.width));
   cv.width = m.width * cs; cv.height = m.height * cs;
   const g = cv.getContext("2d"), css = getComputedStyle(document.documentElement);
@@ -190,11 +208,12 @@ function drawMap(m) {
   }
   const px = (x, y) => [x / m.resolution * cs, (m.height - y / m.resolution) * cs];
   const amber = css.getPropertyValue("--amber");
-  if (m.path.length > 1) {
+  if (Array.isArray(m.path) && m.path.length > 1) {
     g.strokeStyle = amber; g.lineWidth = 2; g.beginPath();
     m.path.forEach((q, i) => { const [x, y] = px(q[0], q[1]); i ? g.lineTo(x, y) : g.moveTo(x, y); });
     g.stroke();
   }
+  if (!m.pose || !Number.isFinite(m.pose.x) || !Number.isFinite(m.pose.y)) return;
   const [x, y] = px(m.pose.x, m.pose.y);
   g.save(); g.translate(x, y); g.rotate(-m.pose.yaw);
   g.fillStyle = amber; g.beginPath(); g.moveTo(cs * .8, 0); g.lineTo(-cs * .5, cs * .45); g.lineTo(-cs * .5, -cs * .45); g.closePath(); g.fill();
@@ -208,7 +227,68 @@ function connect() {
   ws.onmessage = e => { const s = JSON.parse(e.data); render(s); if (s.map) { lastMap = s.map; drawMap(s.map); } };
   ws.onclose = () => { $("conn").textContent = "○ offline, retrying"; $("conn").className = ""; setTimeout(connect, 1500); };
 }
-if (token) connect();
+
+function renderRemoteState(state) {
+  const telemetry = state.telemetry || {};
+  const health = state.health || {};
+  const position = telemetry.position || {};
+  const velocity = telemetry.linear_velocity || {};
+  const battery = telemetry.battery || {};
+  const stale = health.stale_channels || [];
+  $("phase").textContent = stale.length ? "stale data" : "ROS live";
+  $("phase").className = "badge " + (stale.length ? "run" : "wait");
+  $("conn").textContent = stale.length ? "⚠ " + stale.join(", ") : "● ROS connected";
+  $("conn").className = stale.length ? "" : "up";
+  const dl = $("tele");
+  dl.replaceChildren();
+  row(dl, "position", [position.x, position.y, position.z].map(v => v ?? "—").join(", "));
+  row(dl, "velocity", [velocity.x, velocity.y, velocity.z].map(v => v ?? "—").join(", "));
+  row(dl, "heading", telemetry.heading_rad ?? "—");
+  row(dl, "battery", battery.remaining ?? "—");
+  row(dl, "armed", telemetry.armed ?? "—");
+  row(dl, "mode", telemetry.flight_mode ?? "—");
+  row(dl, "localization", JSON.stringify(telemetry.localization || {}));
+  const key = JSON.stringify(state.health || {});
+  if (key !== lastLogKey) {
+    lastLogKey = key;
+    $("log").textContent = stale.length
+      ? "Stale channels: " + stale.join(", ")
+      : "Remote ROS bridge connected";
+  }
+  if (state.map) drawMap(state.map);
+}
+
+function connectRemote() {
+  if (!window.ROSLIB) {
+    $("conn").textContent = "○ roslibjs unavailable";
+    return;
+  }
+  const ros = new ROSLIB.Ros({ url: remoteRosUrl });
+  ros.on("connection", () => {
+    $("conn").textContent = "● ROS connected";
+    $("conn").className = "up";
+  });
+  ros.on("error", error => {
+    $("conn").textContent = "○ ROS error";
+    $("conn").className = "";
+    $("log").textContent = String(error);
+  });
+  ros.on("close", () => {
+    $("conn").textContent = "○ ROS disconnected";
+    $("conn").className = "";
+    setTimeout(connectRemote, 1500);
+  });
+  const topic = new ROSLIB.Topic({
+    ros, name: "/wingman/dashboard_state", messageType: "std_msgs/String"
+  });
+  topic.subscribe(message => {
+    try { renderRemoteState(JSON.parse(message.data)); }
+    catch (error) { $("log").textContent = "Invalid ROS dashboard JSON: " + error; }
+  });
+}
+
+if (remoteMode) connectRemote();
+else if (token) connect();
 </script>
 </body>
 </html>
