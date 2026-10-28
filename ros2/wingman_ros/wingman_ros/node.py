@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import math
 import time
 from typing import Any
 
@@ -214,8 +215,23 @@ if rclpy is not None:
 
         def _publish_state(self):
             now = time.time()
-            self._publish("map", self.store.map_data or {
+            map_value = dict(self.store.map_data or {
                 "schema": "wingman.map.v1", "available": False})
+            position = self.store.telemetry.get("position")
+            orientation = self.store.telemetry.get("orientation")
+            if position and orientation:
+                qx = float(orientation.get("x", 0.0))
+                qy = float(orientation.get("y", 0.0))
+                qz = float(orientation.get("z", 0.0))
+                qw = float(orientation.get("w", 1.0))
+                map_value["pose"] = {
+                    "x": position.get("x"),
+                    "y": position.get("y"),
+                    "yaw": math.atan2(
+                        2.0 * (qw * qz + qx * qy),
+                        1.0 - 2.0 * (qy * qy + qz * qz)),
+                }
+            self._publish("map", map_value)
             self._publish("telemetry", self.store.telemetry or {
                 "schema": "wingman.telemetry.v1", "available": False})
             self._publish("rgbd", self.store.rgbd or {
