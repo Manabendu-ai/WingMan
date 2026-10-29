@@ -88,9 +88,11 @@ const $ = id => document.getElementById(id);
 const params = new URLSearchParams(location.search);
 const configuredRemoteVideoUrl = __WINGMAN_REMOTE_VIDEO__;
 const configuredRemoteRosUrl = __WINGMAN_REMOTE_ROS__;
+const configuredRemoteCommands = __WINGMAN_REMOTE_COMMANDS__;
 const remoteRosUrl = params.get("ros_ws") || configuredRemoteRosUrl;
 const remoteVideoUrl = params.get("video") || configuredRemoteVideoUrl;
 const remoteMode = Boolean(remoteRosUrl || remoteVideoUrl);
+const remoteCommands = params.get("commands") === "1" || configuredRemoteCommands;
 let token = params.get("token");
 try { if (token) sessionStorage.setItem("wm_token", token); else token = sessionStorage.getItem("wm_token"); } catch (e) {}
 if (!remoteMode && !token) document.body.insertAdjacentHTML("afterbegin", "<p style='padding:16px;color:#ff4d4d'>No token. Open the URL printed by the server (it ends in ?token=…).</p>");
@@ -109,17 +111,29 @@ const act = (p, b) => api(p, b).catch(e => alert("Request failed: " + e.message)
 if (remoteMode) {
   document.title = "WINGMAN · remote ROS monitor";
   $("cam").src = remoteVideoUrl || "";
-  $("send").disabled = true;
-  $("abort").disabled = true;
-  $("send").title = "Mission commands are disabled in remote monitor mode";
-  $("abort").title = "Mission commands are disabled in remote monitor mode";
+  $("send").disabled = !remoteCommands;
+  $("abort").disabled = !remoteCommands;
+  $("send").title = remoteCommands ? "Publish command to the remote drone" : "Run with --enable-remote-commands to enable remote commands";
+  $("abort").title = remoteCommands ? "Send a hover command to the remote drone" : "Run with --enable-remote-commands to enable remote commands";
   $("pending").hidden = true;
   $("result").hidden = true;
 } else {
   $("cam").src = "/camera.mjpg?token=" + encodeURIComponent(token || "");
 }
-$("abort").onclick = () => act("/api/abort", {});
-$("send").onclick = () => { const t = $("req").value.trim(); if (t) act("/api/mission", { request: t }); };
+let publishRemoteCommand = null;
+$("abort").onclick = () => {
+  if (remoteMode && publishRemoteCommand) publishRemoteCommand({type: "hover"});
+  else act("/api/abort", {});
+};
+$("send").onclick = () => {
+  const text = $("req").value.trim();
+  if (!text) return;
+  if (remoteMode && publishRemoteCommand) {
+    publishRemoteCommand({prompt: text});
+  } else {
+    act("/api/mission", {request: text});
+  }
+};
 $("yes").onclick = () => act("/api/approve", { approve: true });
 $("no").onclick = () => act("/api/approve", { approve: false });
 $("sendans").onclick = () => { const t = $("ans").value.trim(); if (t) { act("/api/answer", { text: t }); $("ans").value = ""; } };
@@ -233,8 +247,11 @@ function connect() {
 function renderRemoteState(state) {
   const telemetry = state.telemetry || {};
   const health = state.health || {};
-  const position = telemetry.position || {};
-  const velocity = telemetry.linear_velocity || {};
+  const pose = telemetry.pose || [];
+  const position = telemetry.position || {
+    x: pose[0], y: pose[1], z: telemetry.height_m
+  };
+  const velocity = telemetry.velocity || telemetry.linear_velocity || {};
   const battery = telemetry.battery || {};
   const stale = health.stale_channels || [];
   $("phase").textContent = stale.length ? "stale data" : "ROS live";
@@ -245,11 +262,13 @@ function renderRemoteState(state) {
   dl.replaceChildren();
   row(dl, "position", [position.x, position.y, position.z].map(v => v ?? "—").join(", "));
   row(dl, "velocity", [velocity.x, velocity.y, velocity.z].map(v => v ?? "—").join(", "));
-  row(dl, "heading", telemetry.heading_rad ?? "—");
+  row(dl, "heading", telemetry.heading_deg ?? telemetry.heading_rad ?? pose[2] ?? "—");
   row(dl, "battery", battery.remaining ?? "—");
   row(dl, "armed", telemetry.armed ?? "—");
   row(dl, "mode", telemetry.flight_mode ?? "—");
   row(dl, "localization", JSON.stringify(telemetry.localization || {}));
+  if (telemetry.mission_state) row(dl, "mission", telemetry.mission_state);
+  if (telemetry.last) row(dl, "status", telemetry.last);
   const key = JSON.stringify(state.health || {});
   if (key !== lastLogKey) {
     lastLogKey = key;
@@ -257,7 +276,17 @@ function renderRemoteState(state) {
       ? "Stale channels: " + stale.join(", ")
       : "Remote ROS bridge connected";
   }
-  if (state.map) drawMap(state.map);
+  if (state.map) {
+    const pose = telemetry.pose;
+    if (Array.isArray(pose) && pose.length >= 2) {
+      state.map.pose = {
+        x: Number(pose[0]),
+        y: Number(pose[1]),
+        yaw: Number(pose[2] || 0) * Math.PI / 180
+      };
+    }
+    drawMap(state.map);
+  }
 }
 
 function connectRemote() {
@@ -266,9 +295,20 @@ function connectRemote() {
     return;
   }
   const ros = new ROSLIB.Ros({ url: remoteRosUrl });
+  let commandTopic;
   ros.on("connection", () => {
     $("conn").textContent = "● ROS connected";
     $("conn").className = "up";
+    if (remoteCommands) {
+      commandTopic = new ROSLIB.Topic({
+        ros, name: "/wingman/llm_command", messageType: "std_msgs/String"
+      });
+      publishRemoteCommand = command => {
+        const payload = Object.assign({id: String(Date.now())}, command);
+        commandTopic.publish(new ROSLIB.Message({data: JSON.stringify(payload)}));
+        $("log").textContent = "Command sent: " + JSON.stringify(payload);
+      };
+    }
   });
   ros.on("error", error => {
     $("conn").textContent = "○ ROS error";
@@ -286,6 +326,68 @@ function connectRemote() {
   topic.subscribe(message => {
     try { renderRemoteState(JSON.parse(message.data)); }
     catch (error) { $("log").textContent = "Invalid ROS dashboard JSON: " + error; }
+  });
+
+  const telemetryTopic = new ROSLIB.Topic({
+    ros, name: "/wingman/telemetry", messageType: "std_msgs/String"
+  });
+  const missionTopic = new ROSLIB.Topic({
+    ros, name: "/wingman/mission_status", messageType: "std_msgs/String"
+  });
+  const ackTopic = new ROSLIB.Topic({
+    ros, name: "/wingman/llm_command_ack", messageType: "std_msgs/String"
+  });
+  let remoteState = { telemetry: {}, health: { stale_channels: [] } };
+  const updateRemote = () => renderRemoteState(remoteState);
+  telemetryTopic.subscribe(message => {
+    try {
+      remoteState.telemetry = JSON.parse(message.data);
+      remoteState.health = {
+        stale_channels: remoteState.telemetry.stale
+          ? Object.keys(remoteState.telemetry.stale).filter(
+            key => remoteState.telemetry.stale[key])
+          : []
+      };
+      updateRemote();
+    } catch (error) { $("log").textContent = "Invalid telemetry JSON: " + error; }
+  });
+  missionTopic.subscribe(message => {
+    try {
+      remoteState.mission = JSON.parse(message.data);
+      if (remoteState.mission.last) {
+        $("log").textContent = remoteState.mission.last;
+      }
+      updateRemote();
+    } catch (error) { $("log").textContent = "Invalid mission JSON: " + error; }
+  });
+  ackTopic.subscribe(message => {
+    try {
+      const ack = JSON.parse(message.data);
+      $("log").textContent = "Command " + (ack.id || "") + ": " +
+        (ack.message || ack.status || JSON.stringify(ack));
+    } catch (error) { $("log").textContent = "Invalid command acknowledgement"; }
+  });
+  const mapTopic = new ROSLIB.Topic({
+    ros, name: "/map", messageType: "nav_msgs/OccupancyGrid",
+    throttle_rate: 2000, queue_length: 1, compression: "png"
+  });
+  mapTopic.subscribe(message => {
+    const info = message.info || {};
+    const origin = info.origin && info.origin.position;
+    remoteState.map = {
+      width: info.width, height: info.height, resolution: info.resolution,
+      origin: { x: origin ? origin.x : 0, y: origin ? origin.y : 0 },
+      data: message.data || [], pose: null
+    };
+    const pose = remoteState.telemetry.pose;
+    if (Array.isArray(pose) && pose.length >= 2) {
+      remoteState.map.pose = {
+        x: Number(pose[0]),
+        y: Number(pose[1]),
+        yaw: Number(pose[2] || 0) * Math.PI / 180
+      };
+    }
+    updateRemote();
   });
 }
 

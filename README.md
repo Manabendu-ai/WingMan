@@ -284,6 +284,21 @@ stale-data warnings. ROS is not installed on the laptop. The ROS host must
 run `rosbridge_server`, `web_video_server`, and `wingman_ros`; keep ports
 9090 and 8080 private or protect them with a VPN/authenticated proxy.
 
+To enable the remote mission command path in Gazebo/SITL, add
+`--enable-remote-commands` and provide the rosbridge URL:
+
+```bash
+python -m wingman_dashboard --mock \
+  --host 0.0.0.0 \
+  --remote-video 'http://192.168.128.220:8080/stream?topic=/world/maze_exploration/model/x500_gps_denied_0/link/camera_link/sensor/IMX214/image' \
+  --remote-ros-ws 'ws://192.168.128.220:9090' \
+  --enable-remote-commands
+```
+
+The mission box publishes a prompt JSON command to `/wingman/llm_command`,
+ABORT publishes a `hover` command, and acknowledgements are read from
+`/wingman/llm_command_ack`. Validate this only in PX4 SITL/Gazebo.
+
 ## License
 
 Copyright (c) 2026 Manabendu Karfa and Archisman Rana. All rights reserved.
