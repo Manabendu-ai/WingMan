@@ -1,5 +1,6 @@
 """python -m wingman_dashboard --mock      (no LLM key, no VLM server needed)"""
 import argparse
+import os
 import secrets
 import sys
 from pathlib import Path
@@ -28,6 +29,10 @@ def main():
     ap.add_argument("--tick", type=float, default=0.4, help="real seconds per sim tick")
     ap.add_argument("--break-takeoff-once", action="store_true",
                     help="demo: first takeoff fails; the policy stops instead of replanning")
+    ap.add_argument("--remote-video", default=os.getenv("WINGMAN_REMOTE_VIDEO_URL", ""),
+                    help="remote web_video_server stream URL")
+    ap.add_argument("--remote-ros-ws", default=os.getenv("WINGMAN_REMOTE_ROS_WS", ""),
+                    help="remote rosbridge WebSocket URL")
     a = ap.parse_args()
 
     if a.mock_llm or a.mock:
@@ -54,7 +59,10 @@ def main():
     link = PolicyLink(LiveLink(observe, frames, hub, mapsrc, tick_real_s=a.tick,
                                break_first_takeoff=a.break_takeoff_once))
     token = a.token or secrets.token_urlsafe(16)
-    app = create_app(MissionManager(llm, link, hub), ReplayCamera(hub), mapsrc, token, docs=a.docs)
+    app = create_app(
+        MissionManager(llm, link, hub), ReplayCamera(hub), mapsrc, token,
+        docs=a.docs, remote_video_url=a.remote_video,
+        remote_ros_url=a.remote_ros_ws)
     print(f"\n  WINGMAN dashboard on http://{a.host}:{a.port}/?token={token}")
     if a.docs:
         print(f"  API docs:  http://{a.host}:{a.port}/docs   (click Authorize, paste the token)")
