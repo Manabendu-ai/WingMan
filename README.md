@@ -58,6 +58,7 @@ gateway to a PX4/Gazebo flight stack. The current simulation combines:
 ## Architecture
 
 ```mermaid
+<<<<<<< HEAD
 flowchart TD
     OP["Operator"] --> WEB["Browser dashboard"]
 
@@ -93,6 +94,80 @@ flowchart TD
     CAM --> VLM
     CAM --> WVS
     VLM -->|"/wingman/vlm/observation"| RB
+=======
+flowchart LR
+    operator[Operator] --> dashboard[Browser dashboard]
+    dashboard -- "rosbridge WebSocket :9090" --> gateway[ROS 2 web_gateway]
+    dashboard -- "MJPEG HTTP :8080" --> video[web_video_server]
+
+    gateway -- "validate, clamp, acknowledge" --> command["/wingman/mission_command"]
+    command --> autopilot[mission_autopilot<br/>custom Nav2 integration]
+    autopilot -- "/cmd_vel" --> px4bridge[cmdvel_to_px4]
+    px4bridge --> px4[PX4 SITL + Gazebo]
+
+    lidar[2D LiDAR] --> slam[RTAB-Map / localization]
+    slam -- "/map, /odom" --> autopilot
+    slam -- "map and pose" --> gateway
+    camera[Gazebo camera] --> video
+    camera --> vlm[VLM node]
+    vlm -- "/wingman/vlm/observation" --> gateway
+    px4 -- "flight and battery telemetry" --> gateway
+    gateway -- "/wingman/telemetry and acknowledgements" --> dashboard
+```
+
+### Executor lifecycle
+
+The Python onboard executor is deterministic: it does not make flight
+decisions with an LLM. It validates the mission, executes bounded actions,
+and transitions to an explicit terminal state.
+
+```mermaid
+stateDiagram-v2
+    [*] --> IDLE
+    IDLE --> READY: load validated mission
+    READY --> EXECUTING: start
+    EXECUTING --> EXECUTING: tick / advance step
+    EXECUTING --> COMPLETE: all steps succeed
+    EXECUTING --> FAILED: timeout or safety check fails
+    EXECUTING --> ABORTED: operator abort
+    READY --> ABORTED: operator abort
+    COMPLETE --> [*]
+    FAILED --> [*]
+    ABORTED --> [*]
+```
+
+### Typical mission flow
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant O as Operator
+    participant W as Web dashboard
+    participant G as web_gateway
+    participant M as Mission autopilot
+    participant S as SLAM/Nav2
+    participant P as PX4/Gazebo
+    participant V as VLM
+
+    O->>W: Enter natural-language mission
+    W->>G: Publish JSON on /wingman/llm_command
+    G->>G: Validate command and clamp altitude
+    G-->>W: Publish /wingman/llm_command_ack
+    G->>M: Publish validated mission command
+    M->>P: Request takeoff and hold target altitude
+    P-->>M: Publish flight state and rangefinder data
+    M->>S: Request map-based exploration or goto
+    S-->>M: Publish path, goal, pose, and map updates
+    opt find mission
+        P-->>V: Publish camera observations
+        V-->>M: Publish target observation and confidence
+    end
+    M->>P: Send bounded velocity commands
+    P-->>G: Publish telemetry
+    G-->>W: Publish telemetry, map, mission state, and logs
+    M->>P: Return, hover, or land according to mission policy
+    P-->>W: Final state and completion status
+>>>>>>> d7c7d59 (docs: add Mermaid project diagrams)
 ```
 
 ### Repository packages
