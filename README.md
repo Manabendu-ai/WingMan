@@ -1,311 +1,586 @@
-<div align = "center">
-    <img src = "assest/logo.png" width="40%">
+<div align="center">
+  <img src="assest/logo.png" width="220" alt="WingMan logo">
+  <h1>WingMan</h1>
+  <p>
+    <strong>Plain-language autonomous indoor-drone missions</strong><br>
+    LLM mission planning · VLM perception · ROS 2 · PX4 SITL · Gazebo · Nav2
+  </p>
 </div>
 
-
 <p align="center">
-  <strong>Autonomous indoor drone missions from plain-language requests</strong><br>
-  Language-model planning, vision-language perception, and a deterministic onboard executor
+  <img src="assest/droneandmap.jpeg" width="90%" alt="WingMan drone and generated map">
 </p>
 
----
+WingMan is an indoor-drone mission system that turns an operator's natural
+language request into a bounded mission and sends it through a validated ROS 2
+gateway to a PX4/Gazebo flight stack. The current simulation combines:
 
-WingMan is an autonomous indoor drone mission system that combines a ground-side language model planner with an onboard vision-language model (VLM) and a deterministic mission executor. An operator describes a task in plain language. The system converts it into a validated, bounded mission, requests operator approval, and executes it step by step, replanning when a mission fails.
+- PX4 SITL and Gazebo's `maze_exploration` world;
+- 2D LiDAR localization and RTAB-Map occupancy mapping;
+- a custom Nav2-based mission autopilot;
+- a rangefinder-based altitude controller;
+- a VLM pipeline for target-finding missions;
+- a browser dashboard connected through `rosbridge_server`;
+- an MJPEG camera stream provided by `web_video_server`.
 
-The language model never issues motor, speed, or position commands. It selects actions from a fixed menu, and every mission passes through a strict validator before it can run.
+> **Safety status:** This repository is a simulation and SITL integration
+> project. It is not a certified flight-control or safety system. Do not use
+> it on physical aircraft without an independent flight-controller failsafe,
+> geofence, battery failsafe, manual override, and a qualified flight test
+> procedure.
 
-## Status
+## Project status
 
-The full software chain is implemented and tested in simulation. A simulated drone, still images in place of a camera, and constant depth stand in for hardware. Integration with a real flight stack, camera stream, depth sensor, and odometry is pending. See [Hardware integration](#hardware-integration).
+| Area | Status |
+|---|---|
+| Mission schema and validation | Implemented and tested |
+| Ground LLM planning and replanning | Implemented |
+| Deterministic Python executor | Implemented and simulated |
+| PX4 SITL/Gazebo maze startup | Available in `simulation/` |
+| LiDAR bridge and RTAB-Map mapping | Available in the simulation workspace |
+| Website camera stream | Available through `web_video_server` |
+| Website telemetry/map/mission channels | Available through `rosbridge_server` |
+| VLM target-finding path | Available when the VLM node/server is running |
+| Physical-flight certification | Not provided |
+
+## Demonstration gallery
+
+<p align="center">
+  <img src="assest/maze.jpeg" width="31%" alt="Gazebo maze environment">
+  <img src="assest/drone1.jpeg" width="31%" alt="Simulated drone in the maze">
+  <img src="assest/drone2.jpeg" width="31%" alt="Drone simulation view">
+</p>
+
+<p align="center">
+  <img src="assest/map1.jpeg" width="47%" alt="RTAB-Map occupancy map">
+  <img src="assest/website_view.png" width="47%" alt="WingMan website dashboard">
+</p>
 
 ## Architecture
 
-### System overview
+```text
+Operator
+   |
+   v
+Browser dashboard
+   |  rosbridge WebSocket :9090
+   |  web_video_server HTTP :8080
+   v
+ROS 2 web_gateway
+   |  validates/clamps command JSON and publishes acknowledgements
+   v
+/wingman/mission_command
+   |
+   v
+mission_autopilot (custom Nav2 integration)
+   |
+   v
+/cmd_vel
+   |
+   v
+cmdvel_to_px4
+   |
+   v
+PX4 SITL + Gazebo
 
-```mermaid
-flowchart TB
-    OP([Operator])
-
-    subgraph GROUND["Ground Station"]
-        PLAN["LLM Planner<br/>model fallback chain"]
-        VAL{"Validator"}
-        APPR["Operator Approval"]
-        REPLAN["Replanner"]
-    end
-
-    subgraph ONBOARD["Onboard"]
-        EXEC["Mission Executor<br/>deterministic state machine"]
-        VLM["Vision-Language Model"]
-        PROJ["Projector<br/>depth, intrinsics, pose"]
-        BRIDGE["GoalBridge<br/>confirmation and hysteresis"]
-    end
-
-    FC["Flight Stack<br/>DroneInterface"]
-
-    OP -->|"plain-language request"| PLAN
-    PLAN -->|"draft mission"| VAL
-    VAL -->|"errors fed back"| PLAN
-    VAL -->|"valid mission"| APPR
-    APPR -->|"approved mission JSON"| EXEC
-
-    EXEC -->|"vlm_request"| VLM
-    VLM -->|"observation"| PROJ
-    PROJ -->|"3D goal"| BRIDGE
-    BRIDGE -->|"confirmed goal"| EXEC
-
-    EXEC -->|"commands"| FC
-    FC -->|"feedback"| EXEC
-
-    EXEC -->|"status report"| REPLAN
-    REPLAN -->|"corrected mission"| VAL
+RTAB-Map / LiDAR  --> /map, /odom --> website and navigation
+Camera            --> VLM node    --> /wingman/vlm/observation
+PX4 telemetry     --> web_gateway --> /wingman/telemetry
 ```
 
-### Executor lifecycle
+### Repository packages
 
-```mermaid
-stateDiagram-v2
-    [*] --> Idle
-    Idle --> Ready: load mission
-    Ready --> Executing: start
-    Executing --> Executing: step complete
-    Executing --> Complete: final step done
-    Executing --> Failed: step timeout or mission time limit
-    Executing --> Aborted: operator abort
-    Complete --> [*]
-    Failed --> [*]
-    Aborted --> [*]
-```
-
-### Typical mission flow
-
-```mermaid
-flowchart LR
-    A["takeoff"] --> B["explore<br/>until target found"]
-    B --> C["approach target"]
-    C --> D["hover"]
-    D --> E(["complete"])
-
-    A -. "timeout" .-> F(["failed: hold or land"])
-    B -. "time limit" .-> F
-    C -. "timeout" .-> F
-```
-
-### Components
-
-| Package | Path | Responsibility |
+| Package | Location | Responsibility |
 |---|---|---|
-| `wingman-ground` | `ground/` | Mission schema, validator, LLM client, planner, replanner |
-| `wingman-vlm` | `vlm/` | VLM client and server scripts, schema, goal projector, GoalBridge |
-| `wingman-onboard` | `onboard/` | Mission executor and simulation helpers |
-| Scripts | `scripts/` | End-to-end runner |
+| Ground | `ground/` | Mission schema, validator, planner, LLM client, replanner |
+| VLM | `vlm/` | VLM client, observation schema, depth projection, goal bridge |
+| Onboard | `onboard/` | Deterministic executor and offline simulation |
+| Dashboard | `dashboard/` | FastAPI dashboard and browser frontend |
+| ROS bridge | `ros2/wingman_ros/` | Generic ROS 2 state/telemetry bridge |
+| Simulation | `simulation/` | PX4/Gazebo, bridges, RTAB-Map, Nav2, and website launch files |
 
-## Safety Model
+## Mission and command model
 
-- **Fixed action menu.** The planner may only choose from: `takeoff`, `explore`, `approach_target`, `hover`, `return_to_start`, and `land`.
-- **Bounded limits.** Maximum speed, altitude, step count, and mission time are enforced by the validator, and the same limits are injected into the planner prompt.
-- **Re-validation onboard.** The executor validates every mission again on load. It does not trust the link between ground and drone.
-- **Prompt-injection resistance.** Operator requests and drone status reports are passed to the LLM as delimited data, and the mission identifier is always assigned by the system, never by the model.
-- **Human approval.** Every mission, including replans, requires explicit operator approval before execution.
-- **Defined failure behavior.** Timeouts and the mission time limit cause a controlled failure, after which the drone holds position by default or lands if configured.
+The website publishes one JSON string to:
 
-The executor is not a certified safety system. A real deployment must retain the flight controller's own limits, geofence, battery failsafe, and a manual override.
-
-## Requirements
-
-- Python 3.10 or newer
-- A running VLM server for the vision pipeline (`vlm/scripts/run_server.sh`)
-- An API key for an OpenAI-compatible chat completions endpoint (OpenRouter by default)
-
-## Installation
-
-```bash
-git clone <repository-url> WingMan
-cd WingMan
-
-python -m venv vlm/.venv
-source vlm/.venv/bin/activate
-
-pip install -e ground
-pip install -e vlm
-pip install -e onboard
+```text
+/wingman/llm_command
+std_msgs/msg/String
 ```
 
-## Configuration
+The `web_gateway` validates the request, clamps altitude, and acknowledges it
+on:
 
-Create a `.env` file in the repository root. This file must never be committed.
-
-```bash
-LLM_API_KEY=<your key>
-LLM_BASE_URL=https://openrouter.ai/api/v1
-LLM_MODEL=nvidia/nemotron-3-ultra-550b-a55b:free
-LLM_FALLBACK_MODELS=nvidia/nemotron-3.5-lightning:free,nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free
-LLM_MAX_TOKENS=3000
-LLM_DEADLINE_S=45
+```text
+/wingman/llm_command_ack
+std_msgs/msg/String
 ```
 
-| Variable | Description |
-|---|---|
-| `LLM_API_KEY` | API key for the LLM endpoint |
-| `LLM_BASE_URL` | Base URL of an OpenAI-compatible API |
-| `LLM_MODEL` | Primary model |
-| `LLM_FALLBACK_MODELS` | Comma-separated models tried in order if the primary fails |
-| `LLM_MAX_TOKENS` | Maximum tokens per completion |
-| `LLM_DEADLINE_S` | Hard wall-clock limit per request, in seconds |
+Supported command types:
 
-The client retries rate-limited and server-error responses, then moves to the next model on errors, empty output, or a missed deadline. Authentication errors stop immediately.
-
-## Usage
-
-Load the environment, start the VLM server in a separate terminal, then run the end-to-end script:
-
-```bash
-set -a; source .env; set +a
-
-python scripts/run_wingman.py "take off, find the red box, then hover over it"
+```text
+explore | find | goto | return | takeoff | land | hover
 ```
 
-The script plans a mission, displays it for approval, flies it on the simulated drone, and saves a run log under `ground/out/`.
+`then` may be:
 
-To demonstrate failure recovery, stall the first takeoff and let the replanner propose a new mission:
-
-```bash
-python scripts/run_wingman.py --inject-failure "take off, find the red box, then hover over it"
+```text
+return | land | hover | continue
 ```
 
-| Option | Description |
-|---|---|
-| `--yes` | Auto-approve missions |
-| `--inject-failure` | Stall the first takeoff to exercise replanning |
-| `--max-replans N` | Maximum number of replans (default 2) |
-| `--images PATH` | Folder of images used as the simulated camera |
+Altitude is in metres and is clamped by the gateway to `0.4`–`2.0 m`.
+Command IDs are strings; repeating the same ID within the gateway's retry
+window is ignored safely.
 
-To generate a mission without flying it:
+Examples:
 
-```bash
-python ground/scripts/plan.py "solve the following maze"
+```json
+{"id":"42","type":"explore","then":"return","altitude":0.75}
 ```
 
-If a request is unclear or exceeds the limits, the planner returns a clarification question rather than an unsafe mission.
+```json
+{"id":"43","type":"find","target":"person","then":"return","altitude":0.75}
+```
 
-## Mission Format
+```json
+{"id":"44","type":"goto","xy":[4,-10],"then":"hover"}
+```
 
-A mission is a single JSON object:
+```json
+{"id":"45","type":"return"}
+```
+
+```json
+{"id":"46","type":"land"}
+```
+
+The website also accepts an operator prompt:
+
+```json
+{"id":"48","prompt":"explore the maze and return to home while maintaining height of 0.75 m"}
+```
+
+## ROS and website interfaces
+
+### Website subscriptions
+
+| Topic | Type | Publisher | Purpose |
+|---|---|---|---|
+| `/wingman/telemetry` | `std_msgs/msg/String` JSON | `web_gateway` | Main dashboard feed |
+| `/wingman/llm_command_ack` | `std_msgs/msg/String` JSON | `web_gateway` | Command acceptance/rejection |
+| `/map` | `nav_msgs/msg/OccupancyGrid` | RTAB-Map | Occupancy map |
+| `/wingman/planner_debug/path` | `nav_msgs/msg/Path` | `mission_autopilot` | Planned path |
+| `/wingman/planner_debug/goal_marker` | `visualization_msgs/msg/Marker` | `mission_autopilot` | Current goal |
+| `/wingman/mission_status` | `std_msgs/msg/String` JSON | `mission_autopilot` | Raw mission state |
+| `/wingman/flight_state` | `std_msgs/msg/String` JSON | `cmdvel_to_px4` | Raw PX4 bridge state |
+| `/wingman/vlm/observation` | `std_msgs/msg/String` JSON | `vlm_node` | Scene and target detections |
+
+The website connects through:
+
+```text
+ws://<drone-host>:9090
+```
+
+### Camera stream
+
+The camera is an MJPEG HTTP stream, not a ROS WebSocket message:
+
+```text
+http://<drone-host>:8080/stream?topic=/world/maze_exploration/model/x500_gps_denied_0/link/camera_link/sensor/IMX214/image&type=mjpeg&quality=60
+```
+
+### Telemetry JSON
+
+`/wingman/telemetry` contains:
 
 ```json
 {
-  "mission_id": "m_20261026_140424",
-  "goal": "find and hover over the red box",
-  "target": "red box",
-  "steps": [
-    {"action": "takeoff", "altitude_m": 1.0},
-    {"action": "explore", "strategy": "frontier", "until": "target_found"},
-    {"action": "approach_target", "standoff_m": 0.5},
-    {"action": "hover", "duration_s": 10.0}
-  ],
-  "limits": {"max_speed_mps": 0.5, "max_altitude_m": 2.0, "max_time_s": 300},
-  "success_condition": "drone is hovering over the red box"
+  "flight_state": "idle|prestream|arming|climbing|flying|landing|error",
+  "height_m": 0.0,
+  "target_height_m": 0.75,
+  "range_ok": true,
+  "baro_height_m": 0.0,
+  "ready": true,
+  "mission_state": "IDLE|TAKEOFF|EXPLORE|GOTO|RETURN|CONFIRM|HOVER|LANDING",
+  "mission": {"type":"explore","target":null,"then":"return","altitude":0.75},
+  "pose": [0.0, 0.0, 90.0],
+  "goal": [0.0, 0.0],
+  "found": [],
+  "elapsed_s": 0.0,
+  "last": "latest human-readable status",
+  "stale": {"flight": false, "mission": false}
 }
 ```
 
-The first step must be `takeoff`, the last must be `hover` or `land`, and steps that search for something require a `target`. The full set of constraints and maximum values is defined in `ground/src/wingman_ground/mission.py`.
+## Prerequisites
 
-## Hardware Integration
+The simulation host should run:
 
-The executor has no ROS dependency. A flight stack integrates by implementing `DroneInterface` and driving the executor from its own loop:
+- Ubuntu 22.04;
+- ROS 2 Humble;
+- PX4-Autopilot with Gazebo support;
+- Gazebo Sim;
+- Micro XRCE-DDS Agent;
+- RTAB-Map and `rtabmap_msgs`;
+- Nav2 and the WingMan simulation workspace;
+- `rosbridge_server`;
+- `web_video_server`;
+- Python 3.10+ for the Python packages.
 
-1. Call `executor.tick(now, Feedback(...))` at 5 to 10 Hz.
-2. Call `executor.vlm_request()`. If it returns `None`, skip inference.
-3. Otherwise run the VLM, project the detection to a 3D goal using real depth, camera intrinsics, and odometry, and call `executor.on_observation(obs, goal, now)`.
-4. Periodically send `executor.status(now)` to the ground station.
+ROS is required on the simulation host. It does **not** need to be installed
+on a laptop used only to open the website; the laptop needs network access to
+ports `9090` and `8080`.
 
-Use a single monotonic clock for every `now` value. Replace the simulated components as follows:
+## PX4 external-vision parameters
 
-| Simulated | Replace with |
-|---|---|
-| Identity pose | Odometry pose at frame capture time |
-| Constant 3 m depth | Aligned depth image in meters |
-| Still images | Camera stream |
-| `SimDrone` | A `DroneInterface` implementation for the flight stack |
+For GPS-denied external-vision operation, configure the following PX4
+parameters in the SITL vehicle:
 
-## Testing
+| Parameter | Value | Meaning |
+|---|---:|---|
+| `EKF2_EV_CTRL` | `9` | Enables the configured external-vision fusion modes; verify bit semantics for the PX4 version |
+| `EKF2_HGT_REF` | `2` | Selects the configured EKF2 height reference |
+| `EKF2_EV_DELAY` | `50 ms` | Compensates for external-vision measurement delay |
+| `EKF2_EVP_NOISE` | `0.10` | External-vision position noise |
+| `EKF2_EVV_NOISE` | `0.10` | External-vision velocity noise |
+| `EKF2_EVA_NOISE` | `0.10` | External-vision attitude noise |
+| `EKF2_GPS_CTRL` | `0` | Disables GPS aiding in EKF2 |
 
-```bash
-cd ground && python -m pytest -q    # planner, replanner, validator, LLM client
-cd ../onboard && python -m pytest -q  # mission executor
-```
+Apply and verify them using the PX4 console/QGroundControl for the exact PX4
+release in use. Parameter meanings and bit definitions can change between
+releases; do not assume a parameter is correct without checking estimator
+health and the vehicle logs.
 
-Tests use fake LLM and drone implementations and do not require network access, a GPU, or a simulator.
+## Installation
 
-## Repository Layout
-
-```
-ground/
-  src/wingman_ground/   mission schema, validator, llm_client, prompts, planner, replanner
-  scripts/plan.py       generate a mission from a request
-  tests/
-onboard/
-  src/wingman_onboard/  executor, sim helpers
-  tests/
-vlm/
-  src/wingman_vlm/      client, schema, projector, bridge
-  scripts/              VLM server launcher
-  eval/data/            sample images used by the simulation
-scripts/
-  run_wingman.py        end-to-end runner
-dashboard/
-  src/wingman_dashboard/ FastAPI dashboard, live link, map, and camera
-  static/index.html     browser control interface
-ros2/
-  wingman_ros/          ROS 2 Humble map, RGB-D, PX4 telemetry, and health bridge
-```
-
-## Known Limitations
-
-- Validation has been performed only against a simulated drone with still images and constant depth.
-- After a failure the executor holds position indefinitely by default. A hover timeout followed by landing is planned for hardware.
-- The default LLM chain uses free endpoints, which may be rate limited, change, or become unavailable. Verify the chain before any demonstration.
-- Replanning relies on the language model's judgment and is not guaranteed to resolve the underlying fault.
-- ROS 2 telemetry and perception integration is available under `ros2/wingman_ros`.
-- Autonomous ROS command publication is intentionally disabled until the
-  EGO-Planner goal and PX4 command interfaces are finalized and tested.
-
-### Remote website monitoring without ROS on the laptop
-
-ROS only needs to run on the simulator/flight computer. The browser can
-connect to that machine through `rosbridge_server` and `web_video_server`.
-Open the dashboard in remote monitor mode:
-
-```text
-http://DASHBOARD_HOST:8000/?ros_ws=ws%3A%2F%2FROS_HOST%3A9090&video=http%3A%2F%2FROS_HOST%3A8080%2Fstream%3Ftopic%3D%252Fcamera%252Fcolor%252Fimage_raw
-```
-
-This mode is read-only and shows the remote camera, map, telemetry, and
-stale-data warnings. ROS is not installed on the laptop. The ROS host must
-run `rosbridge_server`, `web_video_server`, and `wingman_ros`; keep ports
-9090 and 8080 private or protect them with a VPN/authenticated proxy.
-
-To enable the remote mission command path in Gazebo/SITL, add
-`--enable-remote-commands` and provide the rosbridge URL:
+### Python packages
 
 ```bash
-python -m wingman_dashboard --mock \
+cd ~/WingMan
+python3 -m venv vlm/.venv
+source vlm/.venv/bin/activate
+
+python -m pip install --upgrade pip
+python -m pip install -e ground -e vlm -e onboard -e dashboard
+```
+
+### Simulation workspace
+
+The simulation workspace is expected at `~/ws_wingman` on the simulation
+host. Build it using the workspace's own instructions, then source:
+
+```bash
+source /opt/ros/humble/setup.bash
+source ~/ws_ros2/install/setup.bash
+source ~/ws_wingman/install/setup.bash
+```
+
+## Full WingMan simulation startup
+
+Run the following on the **simulation host**. Keep each block in its own
+terminal. The order matters.
+
+### Terminal 1 — PX4 SITL and Gazebo
+
+```bash
+cd ~/PX4-Autopilot
+PX4_GZ_WORLD=maze_exploration \
+PX4_GZ_MODEL_POSE="0,-17.2,0.3,0,0,1.5708" \
+make px4_sitl gz_x500_gps_denied
+```
+
+### Terminal 2 — Micro XRCE-DDS Agent
+
+```bash
+MicroXRCEAgent udp4 -p 8888
+```
+
+### Terminal 3 — LiDAR bridge
+
+```bash
+source /opt/ros/humble/setup.bash
+source ~/ws_ros2/install/setup.bash
+source ~/ws_wingman/install/setup.bash
+~/ws_wingman/scripts/bridge_lidar.sh \
+  '/world/maze_exploration/model/x500_gps_denied_0/link/link/sensor/lidar_2d_v2/scan' \
+  scan
+```
+
+### Terminal 4 — Camera bridge
+
+Required for `find ...` missions:
+
+```bash
+source /opt/ros/humble/setup.bash
+source ~/ws_ros2/install/setup.bash
+source ~/ws_wingman/install/setup.bash
+ros2 run ros_gz_bridge parameter_bridge \
+  '/world/maze_exploration/model/x500_gps_denied_0/link/camera_link/sensor/IMX214/image@sensor_msgs/msg/Image[gz.msgs.Image'
+```
+
+Do not run a second camera bridge if the website launch file already starts
+one.
+
+### Terminal 5 — Localization and mapping
+
+```bash
+source /opt/ros/humble/setup.bash
+source ~/ws_ros2/install/setup.bash
+source ~/ws_wingman/install/setup.bash
+ros2 launch ~/ws_wingman/launch/maze_bringup.launch.py \
+  with_nav:=false \
+  lidar_frame:=link \
+  lidar_xyz:="0 0 0.075"
+```
+
+RViz should open and the occupancy map should begin building.
+
+### Terminal 6 — Flight stack
+
+```bash
+source /opt/ros/humble/setup.bash
+source ~/ws_ros2/install/setup.bash
+source ~/ws_wingman/install/setup.bash
+ros2 launch wingman_exploration mission.launch.py \
+  vlm:=false \
+  takeoff_alt:=0.75
+```
+
+This starts the custom mission/autopilot path. The VLM is disabled here while
+the initial map and localization warm up.
+
+### Terminal 7 — VLM command-line node
+
+```bash
+source /opt/ros/humble/setup.bash
+source ~/ws_ros2/install/setup.bash
+source ~/ws_wingman/install/setup.bash
+ros2 run wingman_vlm prompt_cli
+```
+
+### Terminal 8 — Website stack
+
+```bash
+source /opt/ros/humble/setup.bash
+source ~/ws_ros2/install/setup.bash
+source ~/ws_wingman/install/setup.bash
+ros2 launch wingman_exploration website.launch.py \
+  rosbridge:=false \
+  video:=false \
+  camera_bridge:=false
+```
+
+Use the disabled flags when rosbridge, video, and camera bridging are started
+manually in separate terminals. If the launch file owns those services,
+enable them there instead and do not start duplicate nodes.
+
+### Terminal 9 — rosbridge WebSocket
+
+```bash
+source /opt/ros/humble/setup.bash
+source ~/ws_ros2/install/setup.bash
+source ~/ws_wingman/install/setup.bash
+ros2 launch rosbridge_server rosbridge_websocket_launch.xml \
+  unregister_timeout:=100.0 \
+  max_message_size:=10000000
+```
+
+### Terminal 10 — web video server
+
+```bash
+source /opt/ros/humble/setup.bash
+ros2 run web_video_server web_video_server
+```
+
+Find the simulation host address for the website:
+
+```bash
+hostname -I
+```
+
+Allow TCP ports `9090` and `8080` through the host firewall if the browser is
+on another machine.
+
+## Start the website without ROS on the laptop
+
+On the laptop, activate the Python environment and run:
+
+```bash
+cd ~/WingMan
+source vlm/.venv/bin/activate
+
+python -m wingman_dashboard \
+  --mock \
   --host 0.0.0.0 \
-  --remote-video 'http://192.168.128.220:8080/stream?topic=/world/maze_exploration/model/x500_gps_denied_0/link/camera_link/sensor/IMX214/image' \
-  --remote-ros-ws 'ws://192.168.128.220:9090' \
+  --port 8000 \
+  --remote-video \
+  'http://<drone-host>:8080/stream?topic=/world/maze_exploration/model/x500_gps_denied_0/link/camera_link/sensor/IMX214/image&type=mjpeg&quality=60' \
+  --remote-ros-ws 'ws://<drone-host>:9090' \
   --enable-remote-commands
 ```
 
-The mission box publishes a prompt JSON command to `/wingman/llm_command`,
-ABORT publishes a `hover` command, and acknowledgements are read from
-`/wingman/llm_command_ack`. Validate this only in PX4 SITL/Gazebo.
+Open:
+
+```text
+http://127.0.0.1:8000/
+```
+
+The `--mock` option here only selects the local dashboard's fallback planner
+objects; the remote command and telemetry channels are provided by the
+simulation host through rosbridge. The browser dashboard is read-only unless
+`--enable-remote-commands` is supplied.
+
+## VLM workflow
+
+The VLM is required for `find` missions, not for basic exploration. Allow the
+mapping/localization stack to warm up first. Then run the VLM node and issue a
+find command through the website or the command topic.
+
+The VLM output is published on:
+
+```text
+/wingman/vlm/observation
+std_msgs/msg/String
+```
+
+It should contain scene text, target visibility, normalized target coordinates,
+confidence, uncertainties, and the suggested next step. A target should only
+be acted upon after confidence, depth, and repeated-observation checks pass.
+
+## Test commands without the website
+
+Monitor acknowledgements:
+
+```bash
+ros2 topic echo /wingman/llm_command_ack
+```
+
+Send a safe hover command:
+
+```bash
+ros2 topic pub --once /wingman/llm_command std_msgs/msg/String \
+  "{data: '{\"id\":\"t1\",\"type\":\"hover\"}'}"
+```
+
+Send a SITL exploration command:
+
+```bash
+ros2 topic pub --once /wingman/llm_command std_msgs/msg/String \
+  "{data: '{\"id\":\"t2\",\"type\":\"explore\",\"then\":\"return\",\"altitude\":0.75}'}"
+```
+
+Monitor telemetry and altitude:
+
+```bash
+ros2 topic echo /wingman/telemetry
+ros2 topic echo /wingman/range --once
+```
+
+Stop or hold the vehicle:
+
+```bash
+ros2 topic pub --once /wingman/llm_command std_msgs/msg/String \
+  "{data: '{\"id\":\"stop-1\",\"type\":\"hover\"}'}"
+```
+
+## Verification checklist
+
+Before issuing a takeoff command:
+
+- [ ] PX4 SITL is healthy and the expected Gazebo world is loaded.
+- [ ] Micro XRCE-DDS Agent is connected.
+- [ ] `/scan` is publishing.
+- [ ] `/odom` is publishing and localization is stable.
+- [ ] `/map` is publishing and updating.
+- [ ] External-vision/GPS-denied PX4 parameters are verified.
+- [ ] The rangefinder is publishing and `range_ok` is true when expected.
+- [ ] `/wingman/telemetry` reports `ready: true`.
+- [ ] `/wingman/llm_command_ack` is visible.
+- [ ] The website shows the current camera and map.
+- [ ] A hover command has been tested.
+- [ ] A land command has been tested.
+
+During a mission:
+
+- Stop immediately if telemetry becomes stale.
+- Stop if localization health degrades.
+- Stop if the rangefinder becomes invalid unexpectedly.
+- Use `hover` or `land` through the command topic as appropriate.
+- Keep the PX4 manual override available.
+
+## Useful diagnostics
+
+```bash
+ros2 topic list
+ros2 topic hz /map
+ros2 topic hz /odom
+ros2 topic hz /wingman/telemetry
+ros2 topic hz /wingman/flight_state
+ros2 topic echo --once /wingman/llm_command_ack
+ros2 topic echo --once /wingman/telemetry
+ros2 topic echo --once /wingman/mission_status
+```
+
+Check the browser-facing services:
+
+```bash
+curl -I 'http://<drone-host>:8080/stream?topic=/world/maze_exploration/model/x500_gps_denied_0/link/camera_link/sensor/IMX214/image&type=mjpeg&quality=60'
+```
+
+For rosbridge, confirm the WebSocket server is listening:
+
+```bash
+ss -ltnp | grep -E ':9090|:8080'
+```
+
+## Python test suite
+
+```bash
+source vlm/.venv/bin/activate
+python -m pytest -q ground/tests
+python -m pytest -q onboard/tests
+python -m pytest -q vlm/tests
+python -m pytest -q dashboard/tests
+```
+
+The ROS bridge's ROS-independent tests can be run without ROS:
+
+```bash
+PYTHONPATH=ros2/wingman_ros python -m pytest -q ros2/wingman_ros/tests
+```
+
+## Known limitations
+
+- The simulation command gateway is the authority for command validation and
+  altitude clamping; the browser is not a flight-safety boundary.
+- The VLM may be unavailable or slow; exploration should continue according
+  to the configured mission policy.
+- RGB-D calibration, TF frames, and depth units must match the simulation
+  configuration before using 3D target projection.
+- `web_video_server` and rosbridge are not authenticated by default. Keep them
+  on a trusted LAN or behind a VPN/authenticated reverse proxy.
+- Do not expose `/wingman/llm_command` to an untrusted network.
+- The generic bridge in `ros2/wingman_ros/` is separate from the friend's
+  `web_gateway`; run only the bridge that owns the topics in your workspace.
+
+## Related documentation
+
+- [Simulation workspace](simulation/README.md)
+- [Website interface](simulation/docs/WEBSITE_INTERFACE.md)
+- [Simulation architecture](simulation/docs/ARCHITECTURE.md)
+- [Simulation troubleshooting](simulation/docs/TROUBLESHOOTING.md)
+- [ROS interface contract](docs/interfaces.md)
+- [Dashboard guide](dashboard/README.md)
 
 ## License
 
 Copyright (c) 2026 Manabendu Karfa and Archisman Rana. All rights reserved.
- 
-This software and its associated documentation are proprietary and confidential. No part of this repository may be copied, modified, merged, published, distributed, sublicensed, sold, or used, in whole or in part, for any purpose without the prior written permission of the copyright holders, Manabendu Karfa and Archisman Rana.
- 
-The software is provided "as is", without warranty of any kind, express or implied, including but not limited to the warranties of merchantability, fitness for a particular purpose, and non-infringement. In no event shall the copyright holders be liable for any claim, damages, or other liability arising from, out of, or in connection with the software or its use. This software controls a flying vehicle, and any use of it with physical hardware is entirely at the user's own risk.
- 
-For permission requests, contact the copyright holders.
- 
+
+This software and its associated documentation are proprietary and
+confidential. No part of this repository may be copied, modified, merged,
+published, distributed, sublicensed, sold, or used, in whole or in part,
+without prior written permission from the copyright holders.
+
+The software is provided "as is", without warranty of any kind. This software
+controls a flying vehicle; any use with physical hardware is entirely at the
+user's own risk.
