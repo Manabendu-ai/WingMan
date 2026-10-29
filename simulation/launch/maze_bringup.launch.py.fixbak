@@ -1,0 +1,63 @@
+"""Whole maze stack in one launch (start AFTER PX4+Gazebo, the XRCE agent and scripts/bridge_lidar.sh):
+lidar ICP odometry + RTAB-Map + RViz -> vio_to_px4 -> Nav2 -> cmdvel_to_px4 -> frontier_explorer
+  ros2 launch ~/ws_wingman/launch/maze_bringup.launch.py scan_kind:=scan planar:=true lidar_frame:=<frame_id>
+"""
+import os
+from launch import LaunchDescription
+from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, TimerAction
+from launch.launch_description_sources import PythonLaunchDescriptionSource
+from launch.substitutions import LaunchConfiguration
+from launch_ros.actions import Node
+
+def generate_launch_description():
+    here = os.path.dirname(os.path.realpath(__file__))
+
+    def node(pkg, exe, delay, remappings=None):
+        return TimerAction(
+            period=delay,
+            actions=[
+                Node(
+                    package=pkg,
+                    executable=exe,
+                    output='screen',
+                    parameters=[{'use_sim_time': True}],
+                    remappings=remappings if remappings else [],
+                    on_exit=[]  # Prevent node exit from tearing down the whole launch tree
+                )
+            ]
+        )
+
+    slam = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(os.path.join(here, 'lidar_slam.launch.py')),
+        launch_arguments={
+            k: LaunchConfiguration(k) for k in
+            ['scan_kind', 'planar', 'lidar_frame', 'lidar_xyz', 'rviz']
+        }.items()
+    )
+
+    nav2 = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(os.path.join(here, 'nav2_stack.launch.py'))
+    )
+
+    return LaunchDescription([
+        DeclareLaunchArgument('scan_kind', default_value='scan'),
+        DeclareLaunchArgument('planar', default_value='true'),
+        DeclareLaunchArgument('lidar_frame', default_value='lidar_link'),
+        DeclareLaunchArgument('lidar_xyz', default_value='0 0 0.12'),
+        DeclareLaunchArgument('rviz', default_value='true'),
+
+        # 1. Start SLAM (ICP Odometry + RTAB-Map + RViz)
+        slam,
+
+        # 2. VIO Bridge to PX4 (5s)
+        node('wingman_control', 'vo_node', 5.0),
+
+        # 3. Nav2 Navigation Stack (10s)
+        TimerAction(period=10.0, actions=[nav2]),
+
+        # 4. CmdVel Bridge to PX4 (12s)
+        node('wingman_control', 'cmdvel_to_px4', 12.0),
+
+        # 5. Frontier Explorer (12s)
+        node('wingman_exploration', 'frontier_explorer', 12.0, remappings=[('/cmd_vel', 'cmd_vel_nav')]),
+    ])
