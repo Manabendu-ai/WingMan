@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="assest/logo.png" width="50%" alt="WingMan logo">
+  <img src="assest/logo.png" width="40%" alt="WingMan logo">
   <p>
     <strong>Plain-language autonomous indoor-drone missions</strong><br>
     LLM mission planning · VLM perception · ROS 2 · PX4 SITL · Gazebo · Nav2
