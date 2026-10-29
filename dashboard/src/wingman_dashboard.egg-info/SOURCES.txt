@@ -1,0 +1,17 @@
+README.md
+pyproject.toml
+src/wingman_dashboard/__init__.py
+src/wingman_dashboard/__main__.py
+src/wingman_dashboard/app.py
+src/wingman_dashboard/camera.py
+src/wingman_dashboard/hub.py
+src/wingman_dashboard/live.py
+src/wingman_dashboard/manager.py
+src/wingman_dashboard/mapsource.py
+src/wingman_dashboard/mocks.py
+src/wingman_dashboard.egg-info/PKG-INFO
+src/wingman_dashboard.egg-info/SOURCES.txt
+src/wingman_dashboard.egg-info/dependency_links.txt
+src/wingman_dashboard.egg-info/requires.txt
+src/wingman_dashboard.egg-info/top_level.txt
+tests/test_all.py
