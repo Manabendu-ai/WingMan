@@ -1,7 +1,14 @@
 pyproject.toml
 src/wingman_vlm/__init__.py
+src/wingman_vlm/bridge.py
+src/wingman_vlm/client.py
+src/wingman_vlm/projector.py
+src/wingman_vlm/prompts.py
+src/wingman_vlm/schema.py
 src/wingman_vlm.egg-info/PKG-INFO
 src/wingman_vlm.egg-info/SOURCES.txt
 src/wingman_vlm.egg-info/dependency_links.txt
 src/wingman_vlm.egg-info/requires.txt
 src/wingman_vlm.egg-info/top_level.txt
+tests/test_bridge.py
+tests/test_projector.py
