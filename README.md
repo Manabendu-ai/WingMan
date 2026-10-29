@@ -58,7 +58,6 @@ gateway to a PX4/Gazebo flight stack. The current simulation combines:
 ## Architecture
 
 ```mermaid
-<<<<<<< HEAD
 flowchart TD
     OP["Operator"] --> WEB["Browser dashboard"]
 
@@ -94,25 +93,6 @@ flowchart TD
     CAM --> VLM
     CAM --> WVS
     VLM -->|"/wingman/vlm/observation"| RB
-=======
-flowchart LR
-    operator[Operator] --> dashboard[Browser dashboard]
-    dashboard -- "rosbridge WebSocket :9090" --> gateway[ROS 2 web_gateway]
-    dashboard -- "MJPEG HTTP :8080" --> video[web_video_server]
-
-    gateway -- "validate, clamp, acknowledge" --> command["/wingman/mission_command"]
-    command --> autopilot[mission_autopilot<br/>custom Nav2 integration]
-    autopilot -- "/cmd_vel" --> px4bridge[cmdvel_to_px4]
-    px4bridge --> px4[PX4 SITL + Gazebo]
-
-    lidar[2D LiDAR] --> slam[RTAB-Map / localization]
-    slam -- "/map, /odom" --> autopilot
-    slam -- "map and pose" --> gateway
-    camera[Gazebo camera] --> video
-    camera --> vlm[VLM node]
-    vlm -- "/wingman/vlm/observation" --> gateway
-    px4 -- "flight and battery telemetry" --> gateway
-    gateway -- "/wingman/telemetry and acknowledgements" --> dashboard
 ```
 
 ### Executor lifecycle
@@ -167,7 +147,6 @@ sequenceDiagram
     G-->>W: Publish telemetry, map, mission state, and logs
     M->>P: Return, hover, or land according to mission policy
     P-->>W: Final state and completion status
->>>>>>> d7c7d59 (docs: add Mermaid project diagrams)
 ```
 
 ### Deployment topology
@@ -179,19 +158,19 @@ only needs Python and network access to the exposed dashboard services.
 ```mermaid
 flowchart TB
     subgraph laptop["Operator laptop"]
-        browser[Web browser]
-        dashboard[Python dashboard<br/>port 8000]
+        browser["Web browser"]
+        dashboard["Python dashboard<br/>port 8000"]
     end
 
     subgraph host["Simulation host"]
-        ros[ROS 2 Humble]
-        bridge[rosbridge_server<br/>WebSocket :9090]
-        webvideo[web_video_server<br/>HTTP :8080]
-        gateway[web_gateway]
-        mission[mission_autopilot]
-        mapping[RTAB-Map and Nav2]
-        px4[PX4 SITL and Gazebo]
-        vlm[VLM node]
+        ros["ROS 2 Humble"]
+        bridge["rosbridge_server<br/>WebSocket :9090"]
+        webvideo["web_video_server<br/>HTTP :8080"]
+        gateway["web_gateway"]
+        mission["mission_autopilot"]
+        mapping["RTAB-Map and Nav2"]
+        px4["PX4 SITL and Gazebo"]
+        vlm["VLM node"]
     end
 
     browser --> dashboard
@@ -214,27 +193,27 @@ mission is running.
 
 ```mermaid
 flowchart LR
-    prompt[Operator prompt] --> planner[LLM planner or dashboard]
-    planner --> json[Command JSON]
-    json --> validate{web_gateway<br/>validation}
-    validate -- "invalid" --> reject[Reject and publish reason]
-    validate -- "valid" --> clamp[Clamp altitude<br/>0.4 to 2.0 m]
-    clamp --> mission[Mission autopilot]
-    mission --> path[Nav2 path planning]
-    path --> velocity[Bounded /cmd_vel]
-    velocity --> controller[cmdvel_to_px4]
-    controller --> vehicle[PX4 vehicle]
+    prompt["Operator prompt"] --> planner["LLM planner or dashboard"]
+    planner --> cmdjson["Command JSON"]
+    cmdjson --> validate{"web_gateway<br/>validation"}
+    validate -- "invalid" --> reject["Reject and publish reason"]
+    validate -- "valid" --> clamp["Clamp altitude<br/>0.4 to 2.0 m"]
+    clamp --> mission["Mission autopilot"]
+    mission --> navpath["Nav2 path planning"]
+    navpath --> velocity["Bounded /cmd_vel"]
+    velocity --> controller["cmdvel_to_px4"]
+    controller --> vehicle["PX4 vehicle"]
 
-    vehicle --> state[Flight state and telemetry]
-    lidar[LiDAR] --> localization[Localization and mapping]
-    localization --> path
-    localization --> map[Occupancy map and pose]
-    camera[RGB camera] --> perception[VLM perception]
-    perception --> observation[Target observation]
+    vehicle --> vstate["Flight state and telemetry"]
+    lidar["LiDAR"] --> localization["Localization and mapping"]
+    localization --> navpath
+    localization --> occmap["Occupancy map and pose"]
+    camera["RGB camera"] --> perception["VLM perception"]
+    perception --> observation["Target observation"]
     observation --> mission
-    state --> feedback[Telemetry and acknowledgement]
-    map --> feedback
-    feedback --> dashboard[Browser dashboard]
+    vstate --> feedback["Telemetry and acknowledgement"]
+    occmap --> feedback
+    feedback --> dashboard["Browser dashboard"]
 ```
 
 ### Safety and failure handling
@@ -244,27 +223,28 @@ timeout, or operator abort must not be treated as mission success.
 
 ```mermaid
 flowchart TD
-    start[Mission running] --> health{Health checks pass?}
-    health -- "yes" --> stale{Telemetry and localization fresh?}
-    stale -- "yes" --> progress{Mission goal reached?}
-    progress -- "no" --> execute[Continue bounded control]
+    begin["Mission running"] --> health{"Health checks pass?"}
+    health -- "yes" --> fresh{"Telemetry and localization fresh?"}
+    fresh -- "yes" --> progress{"Mission goal reached?"}
+    progress -- "no" --> execute["Continue bounded control"]
     execute --> health
-    progress -- "yes" --> policy{Completion policy}
-    policy -- "return" --> return[Return to start]
-    policy -- "land" --> land[Land]
-    policy -- "hover" --> hover[Hold position]
-    return --> complete[Mission complete]
-    land --> complete
-    hover --> complete
+    progress -- "yes" --> policy{"Completion policy"}
+    policy -- "return" --> goHome["Return to start"]
+    policy -- "land" --> landDone["Land"]
+    policy -- "hover" --> holdDone["Hold position"]
+    goHome --> complete["Mission complete"]
+    landDone --> complete
+    holdDone --> complete
 
-    health -- "no" --> fail[Abort mission]
-    stale -- "no" --> fail
+    health -- "no" --> fail["Stop mission"]
+    fresh -- "no" --> fail
     execute -- "timeout or control error" --> fail
-    operator[Operator abort] --> fail
-    fail --> safe{Safe fallback}
-    safe -- "controlled response" --> hover
-    safe -- "landing requested" --> land
-    safe --> error[Report FAILED or ABORTED]
+    opAbort["Operator abort"] --> fail
+    fail --> fallback{"Safe fallback"}
+    fallback -- "controlled response" --> failHover["Hover"]
+    fallback -- "landing requested" --> failLand["Land"]
+    failHover --> report["Report FAILED or ABORTED"]
+    failLand --> report
 ```
 
 ### Repository packages
@@ -739,8 +719,9 @@ PYTHONPATH=ros2/wingman_ros python -m pytest -q ros2/wingman_ros/tests
 - `web_video_server` and rosbridge are not authenticated by default. Keep them
   on a trusted LAN or behind a VPN/authenticated reverse proxy.
 - Do not expose `/wingman/llm_command` to an untrusted network.
-- The generic bridge in `ros2/wingman_ros/` is separate from the friend's
-  `web_gateway`; run only the bridge that owns the topics in your workspace.
+- The generic bridge in `ros2/wingman_ros/` is separate from the simulation
+  workspace's `web_gateway`; run only the bridge that owns the topics in your
+  workspace.
 
 ## Related documentation
 
