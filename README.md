@@ -170,6 +170,103 @@ sequenceDiagram
 >>>>>>> d7c7d59 (docs: add Mermaid project diagrams)
 ```
 
+### Deployment topology
+
+WingMan is split across the simulation host and the operator laptop. ROS 2,
+PX4, Gazebo, mapping, and control remain on the simulation host; the laptop
+only needs Python and network access to the exposed dashboard services.
+
+```mermaid
+flowchart TB
+    subgraph laptop["Operator laptop"]
+        browser[Web browser]
+        dashboard[Python dashboard<br/>port 8000]
+    end
+
+    subgraph host["Simulation host"]
+        ros[ROS 2 Humble]
+        bridge[rosbridge_server<br/>WebSocket :9090]
+        webvideo[web_video_server<br/>HTTP :8080]
+        gateway[web_gateway]
+        mission[mission_autopilot]
+        mapping[RTAB-Map and Nav2]
+        px4[PX4 SITL and Gazebo]
+        vlm[VLM node]
+    end
+
+    browser --> dashboard
+    dashboard -- "commands, telemetry, map" --> bridge
+    dashboard -- "camera MJPEG" --> webvideo
+    bridge --> gateway
+    gateway --> mission
+    mission --> mapping
+    mission --> px4
+    px4 --> ros
+    ros --> mapping
+    ros --> vlm
+    vlm --> gateway
+```
+
+### Mission data flow
+
+This diagram shows the validation boundary and the feedback loop used while a
+mission is running.
+
+```mermaid
+flowchart LR
+    prompt[Operator prompt] --> planner[LLM planner or dashboard]
+    planner --> json[Command JSON]
+    json --> validate{web_gateway<br/>validation}
+    validate -- "invalid" --> reject[Reject and publish reason]
+    validate -- "valid" --> clamp[Clamp altitude<br/>0.4 to 2.0 m]
+    clamp --> mission[Mission autopilot]
+    mission --> path[Nav2 path planning]
+    path --> velocity[Bounded /cmd_vel]
+    velocity --> controller[cmdvel_to_px4]
+    controller --> vehicle[PX4 vehicle]
+
+    vehicle --> state[Flight state and telemetry]
+    lidar[LiDAR] --> localization[Localization and mapping]
+    localization --> path
+    localization --> map[Occupancy map and pose]
+    camera[RGB camera] --> perception[VLM perception]
+    perception --> observation[Target observation]
+    observation --> mission
+    state --> feedback[Telemetry and acknowledgement]
+    map --> feedback
+    feedback --> dashboard[Browser dashboard]
+```
+
+### Safety and failure handling
+
+Every mission has explicit stop paths. A stale stream, failed health check,
+timeout, or operator abort must not be treated as mission success.
+
+```mermaid
+flowchart TD
+    start[Mission running] --> health{Health checks pass?}
+    health -- "yes" --> stale{Telemetry and localization fresh?}
+    stale -- "yes" --> progress{Mission goal reached?}
+    progress -- "no" --> execute[Continue bounded control]
+    execute --> health
+    progress -- "yes" --> policy{Completion policy}
+    policy -- "return" --> return[Return to start]
+    policy -- "land" --> land[Land]
+    policy -- "hover" --> hover[Hold position]
+    return --> complete[Mission complete]
+    land --> complete
+    hover --> complete
+
+    health -- "no" --> fail[Abort mission]
+    stale -- "no" --> fail
+    execute -- "timeout or control error" --> fail
+    operator[Operator abort] --> fail
+    fail --> safe{Safe fallback}
+    safe -- "controlled response" --> hover
+    safe -- "landing requested" --> land
+    safe --> error[Report FAILED or ABORTED]
+```
+
 ### Repository packages
 
 | Package | Location | Responsibility |
