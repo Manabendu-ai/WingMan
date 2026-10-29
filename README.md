@@ -57,34 +57,42 @@ gateway to a PX4/Gazebo flight stack. The current simulation combines:
 
 ## Architecture
 
-```text
-Operator
-   |
-   v
-Browser dashboard
-   |  rosbridge WebSocket :9090
-   |  web_video_server HTTP :8080
-   v
-ROS 2 web_gateway
-   |  validates/clamps command JSON and publishes acknowledgements
-   v
-/wingman/mission_command
-   |
-   v
-mission_autopilot (custom Nav2 integration)
-   |
-   v
-/cmd_vel
-   |
-   v
-cmdvel_to_px4
-   |
-   v
-PX4 SITL + Gazebo
+```mermaid
+flowchart TD
+    OP["Operator"] --> WEB["Browser dashboard"]
 
-RTAB-Map / LiDAR  --> /map, /odom --> website and navigation
-Camera            --> VLM node    --> /wingman/vlm/observation
-PX4 telemetry     --> web_gateway --> /wingman/telemetry
+    subgraph HOST["Simulation host (ROS 2 Humble)"]
+        RB["rosbridge_server<br/>WebSocket :9090"]
+        WVS["web_video_server<br/>HTTP :8080"]
+        GW["web_gateway<br/>validate + clamp altitude"]
+        AP["mission_autopilot<br/>custom Nav2 integration"]
+        C2P["cmdvel_to_px4"]
+        PX4["PX4 SITL + Gazebo"]
+        LIDAR["2D LiDAR"]
+        RTAB["RTAB-Map"]
+        CAM["Camera (IMX214)"]
+        VLM["VLM node"]
+    end
+
+    WEB <-->|"ws://host:9090"| RB
+    WVS -.->|"MJPEG stream"| WEB
+
+    RB -->|"/wingman/llm_command"| GW
+    GW -->|"/wingman/llm_command_ack"| RB
+    GW -->|"/wingman/mission_command"| AP
+    AP -->|"/cmd_vel"| C2P
+    C2P --> PX4
+
+    PX4 -->|"telemetry"| GW
+    GW -->|"/wingman/telemetry"| RB
+
+    LIDAR --> RTAB
+    RTAB -->|"/map, /odom"| AP
+    RTAB -->|"/map"| RB
+
+    CAM --> VLM
+    CAM --> WVS
+    VLM -->|"/wingman/vlm/observation"| RB
 ```
 
 ### Repository packages
