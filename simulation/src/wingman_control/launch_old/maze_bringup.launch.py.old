@@ -1,0 +1,62 @@
+"""Whole maze stack in one launch (start AFTER PX4+Gazebo, XRCE agent aur bridge_lidar.sh):
+lidar ICP odometry + RTAB-Map + RViz -> vio_to_px4 -> Nav2 -> cmdvel_to_px4 -> frontier_explorer
+"""
+import os
+from ament_index_python.packages import get_package_share_directory
+from launch import LaunchDescription
+from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, TimerAction
+from launch.launch_description_sources import PythonLaunchDescriptionSource
+from launch.substitutions import LaunchConfiguration
+from launch_ros.actions import Node
+
+def generate_launch_description():
+    pkg_wingman = get_package_share_directory('wingman_control')
+
+    def node(pkg, exe, delay, remappings=None):
+        return TimerAction(
+            period=delay,
+            actions=[
+                Node(
+                    package=pkg,
+                    executable=exe,
+                    output='screen',
+                    parameters=[{'use_sim_time': True}],
+                    remappings=remappings if remappings else []
+                )
+            ]
+        )
+
+    slam = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(os.path.join(pkg_wingman, 'launch', 'lidar_slam.launch.py')),
+        launch_arguments={
+            k: LaunchConfiguration(k) for k in
+            ['scan_kind', 'planar', 'lidar_frame', 'lidar_xyz', 'rviz']
+        }.items()
+    )
+
+    nav2 = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(os.path.join(pkg_wingman, 'launch', 'nav2_stack.launch.py'))
+    )
+
+    return LaunchDescription([
+        DeclareLaunchArgument('scan_kind', default_value='scan'),
+        DeclareLaunchArgument('planar', default_value='true'),
+        DeclareLaunchArgument('lidar_frame', default_value='lidar_link'),
+        DeclareLaunchArgument('lidar_xyz', default_value='0 0 0.12'),
+        DeclareLaunchArgument('rviz', default_value='true'),
+
+        # 1. SLAM Start
+        slam,
+
+        # 2. VIO to PX4 Bridge (5s delay)
+        node('wingman_control', 'vio_to_px4', 5.0),
+
+        # 3. Nav2 Stack (10s delay)
+        TimerAction(period=10.0, actions=[nav2]),
+
+        # 4. CmdVel to PX4 Bridge (12s delay)
+        node('wingman_control', 'cmdvel_to_px4', 12.0),
+
+        # 5. Frontier Explorer (12s delay - cmd_vel_nav remapping ke saath)
+        node('wingman_exploration', 'frontier_explorer', 12.0, remappings=[('/cmd_vel', 'cmd_vel_nav')]),
+    ])
