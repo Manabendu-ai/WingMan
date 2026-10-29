@@ -86,9 +86,11 @@ dt{color:var(--dim)}dd{margin:0}
 "use strict";
 const $ = id => document.getElementById(id);
 const params = new URLSearchParams(location.search);
-const remoteRosUrl = params.get("ros_ws");
-const remoteVideoUrl = params.get("video");
-const remoteMode = Boolean(remoteRosUrl);
+const configuredRemoteVideoUrl = __WINGMAN_REMOTE_VIDEO__;
+const configuredRemoteRosUrl = __WINGMAN_REMOTE_ROS__;
+const remoteRosUrl = params.get("ros_ws") || configuredRemoteRosUrl;
+const remoteVideoUrl = params.get("video") || configuredRemoteVideoUrl;
+const remoteMode = Boolean(remoteRosUrl || remoteVideoUrl);
 let token = params.get("token");
 try { if (token) sessionStorage.setItem("wm_token", token); else token = sessionStorage.getItem("wm_token"); } catch (e) {}
 if (!remoteMode && !token) document.body.insertAdjacentHTML("afterbegin", "<p style='padding:16px;color:#ff4d4d'>No token. Open the URL printed by the server (it ends in ?token=…).</p>");
