@@ -1,7 +1,7 @@
 <div align="center">
   <img src="assest/logo.png" width="40%" alt="WingMan logo">
   <p>
-    <strong>Plain-language autonomous indoor-drone missions</strong><br>
+    <strong>Multi-Agent VLM-Powered Intelligent System for GPS-Denied Autonomous Drones for indoor missions</strong><br>
     LLM mission planning · VLM perception · ROS 2 · PX4 SITL · Gazebo · Nav2
   </p>
 </div>
