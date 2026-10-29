@@ -1,0 +1,69 @@
+WingMan drone project — Commands in order
+
+
+T1 — Start the maze simulation
+Option A: Use your existing launch script
+Open Terminal 1:
+~/ws_wingman/scripts/start_simulation.sh
+
+
+Your script sets the ROS environment, Gazebo resource paths, maze world, and spawn pose before launching PX4.
+Option B: Launch PX4 directly
+Use this instead of Option A, not at the same time:
+cd ~/PX4-Autopilot
+
+PX4_GZ_WORLD=maze_exploration \
+PX4_GZ_MODEL_POSE="0,-17.2,0.3,0,0,1.5708" \
+make px4_sitl gz_x500_gps_denied
+
+
+T2 -- Micro xrce
+MicroXRCEAgent udp4 -p 8888
+
+
+T3 -- RGB image + camera info:
+source /opt/ros/humble/setup.bash
+
+ros2 run ros_gz_bridge parameter_bridge \
+'/world/maze_exploration/model/x500_gps_denied_0/link/camera_link/sensor/IMX214/image@sensor_msgs/msg/Image[gz.msgs.Image' \
+'/world/maze_exploration/model/x500_gps_denied_0/link/camera_link/sensor/IMX214/camera_info@sensor_msgs/msg/CameraInfo[gz.msgs.CameraInfo'
+
+
+T4 -- Depth point cloud
+source /opt/ros/humble/setup.bash
+
+ros2 run ros_gz_bridge parameter_bridge \
+'/depth_camera/points@sensor_msgs/msg/PointCloud2[gz.msgs.PointCloudPacked'
+
+
+T5 -- Compressed camera stream
+source /opt/ros/humble/setup.bash
+
+ros2 run image_transport republish raw compressed \
+--ros-args \
+-r in:=/world/maze_exploration/model/x500_gps_denied_0/link/camera_link/sensor/IMX214/image \
+-r out/compressed:=/wingman/camera/compressed
+
+
+T6 — RViz2
+source /opt/ros/humble/setup.bash
+source ~/ws_ros2/install/setup.bash
+
+QT_QPA_PLATFORM=xcb rviz2
+
+
+T7 — rosbridge WebSocket
+
+source /opt/ros/humble/setup.bash
+ros2 launch rosbridge_server rosbridge_websocket_launch.xml \
+unregister_timeout:=100.0 \
+max_message_size:=10000000
+
+
+T8 — Web video server
+source /opt/ros/humble/setup.bash
+
+ros2 run web_video_server web_video_server
+
+
+

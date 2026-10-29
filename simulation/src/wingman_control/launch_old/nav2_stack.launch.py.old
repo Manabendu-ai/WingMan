@@ -1,0 +1,28 @@
+"""Nav2 navigation servers (no map_server/AMCL: RTAB-Map provides map->odom)."""
+import os
+from ament_index_python.packages import get_package_share_directory
+from launch import LaunchDescription
+from launch.actions import IncludeLaunchDescription
+from launch.launch_description_sources import PythonLaunchDescriptionSource
+from launch_ros.actions import SetRemap
+
+def generate_launch_description():
+    pkg_wingman = get_package_share_directory('wingman_control')
+    nav2_dir = get_package_share_directory('nav2_bringup')
+
+    # Resolves to installed share path /share/wingman_control/config/nav2_params.yaml
+    params_file = os.path.join(pkg_wingman, 'config', 'nav2_params.yaml')
+
+    return LaunchDescription([
+        # Forces Nav2 servers to publish to /cmd_vel_nav so only velocity_smoother owns /cmd_vel
+        SetRemap(src='/cmd_vel', dst='cmd_vel_nav'),
+
+        IncludeLaunchDescription(
+            PythonLaunchDescriptionSource(os.path.join(nav2_dir, 'launch', 'navigation_launch.py')),
+            launch_arguments={
+                'use_sim_time': 'true',
+                'params_file': params_file,
+                'autostart': 'true',
+            }.items()
+        ),
+    ])

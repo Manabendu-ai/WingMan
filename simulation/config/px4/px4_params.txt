@@ -1,0 +1,13 @@
+# Type in the PX4 shell (pxh>), then RESTART PX4 (full restart, not just `ekf2 stop/start`).
+# Lidar odometry -> horizontal position + yaw. Height: barometer. One XY source only (flow off).
+param set EKF2_GPS_CTRL 0
+param set EKF2_EV_CTRL 9        # 1 = horizontal position, 8 = yaw  (bits 0-3 only; 29 is not valid)
+param set EKF2_HGT_REF 0        # barometer height (HGT_REF 2 needs the rangefinder to be fused)
+param set EKF2_MAG_TYPE 5       # no magnetometer: yaw comes from vision
+param set EKF2_EV_DELAY 50
+param set EKF2_EVP_NOISE 0.1
+param set EKF2_EVA_NOISE 0.1
+param set EKF2_OF_CTRL 0        # optical flow off while testing vision
+param set COM_ARM_WO_GPS 1
+param set NAV_DLL_ACT 0
+param save

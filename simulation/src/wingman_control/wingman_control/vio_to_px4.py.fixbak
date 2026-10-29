@@ -1,0 +1,176 @@
+#!/usr/bin/env python3
+import math
+import rclpy
+from rclpy.node import Node
+from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy
+from nav_msgs.msg import Odometry
+from px4_msgs.msg import VehicleOdometry
+from geometry_msgs.msg import TransformStamped
+from tf2_ros import TransformBroadcaster
+
+
+class VioToPx4Bridge(Node):
+    def __init__(self):
+        super().__init__('vio_to_px4')
+
+        qos_profile = QoSProfile(
+            reliability=ReliabilityPolicy.BEST_EFFORT,
+            history=HistoryPolicy.KEEP_LAST,
+            depth=1
+        )
+
+        # TF Broadcaster to maintain continuous odom -> base_link transform
+        self.tf_broadcaster = TransformBroadcaster(self)
+        self.last_odom_msg = None
+
+        self.odom_sub = self.create_subscription(
+            Odometry,
+            '/odom',
+            self.odom_callback,
+            10
+        )
+
+        self.px4_visual_odom_pub = self.create_publisher(
+            VehicleOdometry,
+            '/fmu/in/vehicle_visual_odometry',
+            qos_profile
+        )
+
+        # 20Hz timer to maintain the TF tree even during momentary ICP scan drops
+        self.create_timer(0.05, self.tf_timer_callback)
+
+        self.get_logger().info('VIO to PX4 Bridge initialized with active TF watchdog and ENU->NED conversions.')
+
+    def odom_callback(self, msg: Odometry):
+        self.last_odom_msg = msg
+
+        pos = msg.pose.pose.position
+        ori = msg.pose.pose.orientation
+
+        # Prevent publishing NaNs
+        if math.isnan(pos.x) or math.isnan(pos.y) or math.isnan(pos.z):
+            return
+
+        # -------------------------------------------------------------
+        # Prepare PX4 uORB VehicleOdometry Message
+        # -------------------------------------------------------------
+        px4_msg = VehicleOdometry()
+
+        # Convert ROS Sim-Time stamp (Sec/Nanosec) -> Microseconds for PX4 EKF2
+        sec = msg.header.stamp.sec
+        nanosec = msg.header.stamp.nanosec
+        stamp_us = int(sec * 1000000 + nanosec / 1000)
+
+        if stamp_us == 0:
+            stamp_us = int(self.get_clock().now().nanoseconds / 1000)
+
+        px4_msg.timestamp = stamp_us
+        px4_msg.timestamp_sample = stamp_us
+
+        # Set Frames (1 = POSE_FRAME_NED)
+        px4_msg.pose_frame = VehicleOdometry.POSE_FRAME_NED
+        px4_msg.velocity_frame = VehicleOdometry.VELOCITY_FRAME_NED
+
+        # Position: ROS ENU -> PX4 NED (North = X_enu, East = Y_enu, Down = -Z_enu)
+        px4_msg.position = [
+            float(pos.x),    # North
+            float(pos.y),    # East
+            float(-pos.z)    # Down
+        ]
+
+        # Orientation Quaternion: ROS ENU -> PX4 NED + Normalization Guard
+        qw = float(ori.w)
+        qx = float(ori.x)
+        qy = float(ori.y)
+        qz = float(ori.z)
+
+        norm = math.sqrt(qw**2 + qx**2 + qy**2 + qz**2)
+
+        # Fallback to valid unit identity quaternion if uninitialized or zero-norm
+        if norm < 0.001:
+            px4_msg.q = [1.0, 0.0, 0.0, 0.0]  # PX4 [w, x, y, z]
+        else:
+            # Normalize and map ENU -> NED: q_NED = [qw, qx, -qy, -qz]
+            qw /= norm
+            qx /= norm
+            qy /= norm
+            qz /= norm
+            px4_msg.q = [
+                float(qw),
+                float(qx),
+                float(-qy),
+                float(-qz)
+            ]
+
+        # Linear Velocity: ROS ENU -> PX4 NED
+        vel = msg.twist.twist.linear
+        px4_msg.velocity = [
+            float(vel.x),
+            float(vel.y),
+            float(-vel.z)
+        ]
+
+        # Angular Velocity: ROS ENU -> PX4 NED
+        ang = msg.twist.twist.angular
+        px4_msg.angular_velocity = [
+            float(ang.x),
+            float(-ang.y),
+            float(-ang.z)
+        ]
+
+        # Non-zero Variance matrices required to pass EKF2 innovation checks
+        px4_msg.position_variance = [0.01, 0.01, 0.01]
+        px4_msg.orientation_variance = [0.01, 0.01, 0.05]
+        px4_msg.velocity_variance = [0.01, 0.01, 0.01]
+
+        px4_msg.reset_counter = 0
+
+        self.px4_visual_odom_pub.publish(px4_msg)
+
+    def tf_timer_callback(self):
+        """Broadcasts odom -> base_link transform continuously to prevent Nav2 transform errors."""
+        stamp = self.get_clock().now().to_msg()
+        tf_msg = TransformStamped()
+        tf_msg.header.stamp = stamp
+        tf_msg.header.frame_id = 'odom'
+        tf_msg.child_frame_id = 'base_link'
+
+        if self.last_odom_msg is not None:
+            pos = self.last_odom_msg.pose.pose.position
+            ori = self.last_odom_msg.pose.pose.orientation
+            tf_msg.transform.translation.x = float(pos.x)
+            tf_msg.transform.translation.y = float(pos.y)
+            tf_msg.transform.translation.z = float(pos.z)
+            tf_msg.transform.rotation.x = float(ori.x)
+            tf_msg.transform.rotation.y = float(ori.y)
+            tf_msg.transform.rotation.z = float(ori.z)
+            tf_msg.transform.rotation.w = float(ori.w)
+        else:
+            # Fallback identity transform prior to receiving initial odometry
+            tf_msg.transform.translation.x = 0.0
+            tf_msg.transform.translation.y = 0.0
+            tf_msg.transform.translation.z = 0.0
+            tf_msg.transform.rotation.x = 0.0
+            tf_msg.transform.rotation.y = 0.0
+            tf_msg.transform.rotation.z = 0.0
+            tf_msg.transform.rotation.w = 1.0
+
+        self.tf_broadcaster.sendTransform(tf_msg)
+
+
+def main(args=None):
+    rclpy.init(args=args)
+    node = VioToPx4Bridge()
+    try:
+        rclpy.spin(node)
+    except (KeyboardInterrupt, ExternalShutdownException):
+        pass
+    except Exception as e:
+        print(f"VIO Bridge Exception: {e}")
+    finally:
+        node.destroy_node()
+        if rclpy.ok():
+            rclpy.shutdown()
+
+if __name__ == '__main__':
+    main()

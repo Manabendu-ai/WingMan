@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Wingman Mission Control Dashboard</title>
+  <!-- 1. Load EaselJS -->
+  <script src="https://code.createjs.com/1.0.0/easeljs.min.js"></script>
+  <!-- 2. Load roslibjs -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/roslibjs/1.1.0/roslib.min.js"></script>
+  <!-- 3. Load ros2d -->
+  <script src="https://cdn.jsdelivr.net/npm/ros2d@0.10.0/build/ros2d.min.js"></script>
+  <style>
+    body { background: #181818; color: #f0f0f0; font-family: sans-serif; margin: 0; padding: 20px; }
+    h1 { text-align: center; color: #00bcd4; }
+    .container { display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; }
+    .panel { background: #222; border: 1px solid #444; border-radius: 8px; padding: 15px; text-align: center; }
+    .panel h3 { margin-top: 0; color: #ff9800; }
+  </style>
+</head>
+<body>
+  <h1>Wingman Autonomous Mission Control</h1>
+  
+  <div class="container">
+    <!-- Camera Stream Panel -->
+    <div class="panel">
+      <h3>Live Camera Feed</h3>
+      <!-- Using web_video_server MJPEG stream -->
+      <img src="http://localhost:8080/stream?topic=/world/maze_exploration/model/x500_gps_denied_0/link/camera_link/sensor/IMX214/image" 
+           width="400" height="300" style="background:#000; border-radius: 4px;" alt="Camera Stream" />
+    </div>
+
+    <!-- RTAB-Map Panel -->
+    <div class="panel">
+      <h3>Live RTAB-Map Grid</h3>
+      <div id="map" style="width: 400px; height: 300px; background: #333; border-radius: 4px; display: inline-block;"></div>
+    </div>
+
+    <!-- Telemetry Panel -->
+    <div class="panel" style="width: 300px; text-align: left;">
+      <h3>PX4 Telemetry</h3>
+      <p><strong>X Position:</strong> <span id="pos-x">0.00</span> m</p>
+      <p><strong>Y Position:</strong> <span id="pos-y">0.00</span> m</p>
+      <p><strong>Altitude (Z):</strong> <span id="pos-z">0.00</span> m</p>
+    </div>
+  </div>
+
+  <script>
+    // Connect to ROS Bridge WebSocket
+    var ros = new ROSLIB.Ros({
+      url: 'ws://localhost:9090'
+    });
+
+    ros.on('connection', function() {
+      console.log('Connected to websocket server successfully!');
+    });
+
+    // Initialize RTAB-Map 2D Viewer
+    var viewer = new ROS2D.Viewer({
+      divID: 'map',
+      width: 400,
+      height: 300
+    });
+
+    var gridClient = new ROS2D.OccupancyGridClient({
+      ros: ros,
+      rootObject: viewer.scene,
+      continuous: true,
+      topic: '/map'
+    });
+
+    gridClient.on('change', function() {
+      viewer.scaleToDimensions(gridClient.currentGrid.width, gridClient.currentGrid.height);
+      viewer.shift(gridClient.currentGrid.pose.position.x, gridClient.currentGrid.pose.position.y);
+    });
+
+    // Subscribe to PX4 Telemetry
+    var telemetryTopic = new ROSLIB.Topic({
+      ros: ros,
+      name: '/fmu/out/vehicle_local_position_v1',
+      messageType: 'px4_msgs/msg/VehicleLocalPosition'
+    });
+
+    telemetryTopic.subscribe(function(message) {
+      document.getElementById('pos-x').innerText = message.x.toFixed(2);
+      document.getElementById('pos-y').innerText = message.y.toFixed(2);
+      document.getElementById('pos-z').innerText = message.z.toFixed(2);
+    });
+  </script>
+</body>
+</html>

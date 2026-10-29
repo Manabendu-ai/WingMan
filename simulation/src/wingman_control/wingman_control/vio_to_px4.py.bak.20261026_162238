@@ -1,0 +1,104 @@
+#!/usr/bin/env python3
+"""nav_msgs/Odometry (ROS ENU/FLU, from /odom) -> px4_msgs/VehicleOdometry (NED/FRD)
+published on /fmu/in/vehicle_visual_odometry. Stops publishing when tracking is lost."""
+import numpy as np
+import rclpy
+from rclpy.node import Node
+from rclpy.qos import QoSProfile, ReliabilityPolicy, DurabilityPolicy, HistoryPolicy
+from nav_msgs.msg import Odometry
+from px4_msgs.msg import VehicleOdometry
+ 
+R_NED_ENU = np.array([[0., 1., 0.], [1., 0., 0.], [0., 0., -1.]])
+R_FLU_FRD = np.diag([1., -1., -1.])
+ 
+ 
+def quat_to_R(x, y, z, w):
+    return np.array([
+        [1 - 2*(y*y + z*z), 2*(x*y - z*w),     2*(x*z + y*w)],
+        [2*(x*y + z*w),     1 - 2*(x*x + z*z), 2*(y*z - x*w)],
+        [2*(x*z - y*w),     2*(y*z + x*w),     1 - 2*(x*x + y*y)]])
+ 
+ 
+def R_to_quat_wxyz(R):
+    t = np.trace(R)
+    if t > 0:
+        s = np.sqrt(t + 1.0) * 2
+        w = 0.25 * s
+        x = (R[2, 1] - R[1, 2]) / s
+        y = (R[0, 2] - R[2, 0]) / s
+        z = (R[1, 0] - R[0, 1]) / s
+    elif R[0, 0] > R[1, 1] and R[0, 0] > R[2, 2]:
+        s = np.sqrt(1.0 + R[0, 0] - R[1, 1] - R[2, 2]) * 2
+        w = (R[2, 1] - R[1, 2]) / s
+        x = 0.25 * s
+        y = (R[0, 1] + R[1, 0]) / s
+        z = (R[0, 2] + R[2, 0]) / s
+    elif R[1, 1] > R[2, 2]:
+        s = np.sqrt(1.0 + R[1, 1] - R[0, 0] - R[2, 2]) * 2
+        w = (R[0, 2] - R[2, 0]) / s
+        x = (R[0, 1] + R[1, 0]) / s
+        y = 0.25 * s
+        z = (R[1, 2] + R[2, 1]) / s
+    else:
+        s = np.sqrt(1.0 + R[2, 2] - R[0, 0] - R[1, 1]) * 2
+        w = (R[1, 0] - R[0, 1]) / s
+        x = (R[0, 2] + R[2, 0]) / s
+        y = (R[1, 2] + R[2, 1]) / s
+        z = 0.25 * s
+    q = np.array([w, x, y, z])
+    return q / np.linalg.norm(q)
+ 
+ 
+class VioToPx4(Node):
+    def __init__(self):
+        super().__init__('vio_to_px4')
+        qos = QoSProfile(reliability=ReliabilityPolicy.BEST_EFFORT,
+                         durability=DurabilityPolicy.TRANSIENT_LOCAL,
+                         history=HistoryPolicy.KEEP_LAST, depth=1)
+        self.pub = self.create_publisher(VehicleOdometry, '/fmu/in/vehicle_visual_odometry', qos)
+        self.create_subscription(Odometry, '/odom', self.cb, 10)
+        self.get_logger().info('vio_to_px4 running: /odom -> /fmu/in/vehicle_visual_odometry')
+ 
+    def cb(self, m: Odometry):
+        cov = m.pose.covariance
+        # RTAB-Map reports ~9999 covariance when tracking is lost: do not forward bad poses.
+        if not np.isfinite(cov[0]) or cov[0] > 1.0 or cov[0] <= 0.0:
+            self.get_logger().warn('Odometry tracking lost - not forwarding to PX4',
+                                   throttle_duration_sec=2.0)
+            return
+        p = m.pose.pose.position
+        o = m.pose.pose.orientation
+        R_enu_flu = quat_to_R(o.x, o.y, o.z, o.w)
+        p_ned = R_NED_ENU @ np.array([p.x, p.y, p.z])
+        q = R_to_quat_wxyz(R_NED_ENU @ R_enu_flu @ R_FLU_FRD)
+        v_flu = np.array([m.twist.twist.linear.x, m.twist.twist.linear.y, m.twist.twist.linear.z])
+        v_ned = R_NED_ENU @ (R_enu_flu @ v_flu)
+        w_frd = R_FLU_FRD @ np.array([m.twist.twist.angular.x, m.twist.twist.angular.y,
+                                      m.twist.twist.angular.z])
+        out = VehicleOdometry()
+        out.timestamp = int(self.get_clock().now().nanoseconds / 1000)
+        out.timestamp_sample = int(m.header.stamp.sec * 1e6 + m.header.stamp.nanosec / 1e3)
+        out.pose_frame = VehicleOdometry.POSE_FRAME_NED
+        out.position = [float(v) for v in p_ned]
+        out.q = [float(v) for v in q]
+        out.velocity_frame = VehicleOdometry.VELOCITY_FRAME_NED
+        out.velocity = [float(v) for v in v_ned]
+        if hasattr(out, 'angular_velocity'):
+            out.angular_velocity = [float(v) for v in w_frd]
+        pv = max(cov[0], 1e-4), max(cov[7], 1e-4), max(cov[14], 1e-4)
+        out.position_variance = [float(pv[1]), float(pv[0]), float(pv[2])]
+        out.orientation_variance = [float(max(cov[21], 1e-4)), float(max(cov[28], 1e-4)),
+                                    float(max(cov[35], 1e-4))]
+        out.velocity_variance = [0.05, 0.05, 0.05]
+        if hasattr(out, 'quality'):
+            out.quality = 100
+        self.pub.publish(out)
+ 
+ 
+def main():
+    rclpy.init()
+    rclpy.spin(VioToPx4())
+ 
+ 
+if __name__ == '__main__':
+    main()

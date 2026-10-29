@@ -1,0 +1,94 @@
+Wingman Drone imp commands
+
+==============================================================================================================
+IMP PARAMS TO TRIGGER TO GET ALL TRUE
+
+Parameter	Value	Meaning
+EKF2_EV_CTRL	9	Enables selected external-vision fusion modes; the exact enabled measurements depend on PX4's bit definitions.
+EKF2_HGT_REF	2	Selects the configured EKF2 height reference.
+EKF2_EV_DELAY	50 ms	Compensation for external-vision measurement delay.
+EKF2_EVP_NOISE	0.10	External-vision position measurement noise.
+EKF2_EVV_NOISE	0.10	External-vision velocity measurement noise.
+EKF2_EVA_NOISE	0.10	External-vision attitude measurement noise.
+EKF2_GPS_CTRL	0	Disables GPS aiding in EKF2.
+
+====================================================================================================================================
+
+Final VLM commands working for now:
+
+
+Terminal 1: Start PX4 SITL & Gazebo Simulator
+Bash
+cd ~/PX4-Autopilot
+PX4_GZ_WORLD=maze_exploration PX4_GZ_MODEL_POSE="0,-17.2,0.3,0,0,1.5708" make px4_sitl gz_x500_gps_denied
+
+Terminal 2: Start the Micro XRCE-DDS Agent
+Bash
+MicroXRCEAgent udp4 -p 8888
+
+
+Terminal 3: Bridge the LiDAR Data
+Bash
+source /opt/ros/humble/setup.bash
+source ~/ws_ros2/install/setup.bash
+source ~/ws_wingman/install/setup.bash
+ ~/ws_wingman/scripts/bridge_lidar.sh '/world/maze_exploration/model/x500_gps_denied_0/link/link/sensor/lidar_2d_v2/scan' scan
+
+
+Step 4: Camera bridge
+
+Only needed for “find ...” missions.
+
+bash
+source /opt/ros/humble/setup.bash
+source ~/ws_ros2/install/setup.bash
+source ~/ws_wingman/install/setup.bash
+ros2 run ros_gz_bridge parameter_bridge '/world/maze_exploration/model/x500_gps_denied_0/link/camera_link/sensor/IMX214/image@sensor_msgs/msg/Image[gz.msgs.Image'
+
+
+
+Step 5: Localization and mapping
+bash
+source /opt/ros/humble/setup.bash
+source ~/ws_ros2/install/setup.bash
+source ~/ws_wingman/install/setup.bash
+ros2 launch ~/ws_wingman/launch/maze_bringup.launch.py with_nav:=false lidar_frame:=link lidar_xyz:="0 0 0.075"
+
+RViz opens and the map starts building.
+
+
+Step 6: VLM warms up in the first minute
+bash
+source /opt/ros/humble/setup.bash
+source ~/ws_ros2/install/setup.bash
+source ~/ws_wingman/install/setup.bash
+ros2 launch wingman_exploration mission.launch.py vlm:=false takeoff_alt:=0.75
+
+
+
+Step 7: VLM cli
+bash
+source /opt/ros/humble/setup.bash
+source ~/ws_ros2/install/setup.bash
+source ~/ws_wingman/install/setup.bash
+ ros2 run wingman_vlm prompt_cli
+
+
+Step 8: 
+source /opt/ros/humble/setup.bash
+source ~/ws_ros2/install/setup.bash
+source ~/ws_wingman/install/setup.bash
+ros2 launch wingman_exploration website.launch.py rosbridge:=false video:=false camera_bridge:=false
+
+
+step 9: Start Rosbridge (Enables website to talk to ROS via WebSockets)
+source /opt/ros/humble/setup.bash
+source ~/ws_ros2/install/setup.bash
+source ~/ws_wingman/install/setup.bash
+ros2 launch rosbridge_server rosbridge_websocket_launch.xml unregister_timeout:=100.0 max_message_size:=10000000
+
+
+Terminal 10: Start Web Video Server (Converts ROS image topics into MJPEG streams for HTML tags)
+Bash
+source /opt/ros/humble/setup.bash
+ros2 run web_video_server web_video_server

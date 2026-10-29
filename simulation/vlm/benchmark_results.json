@@ -1,0 +1,1426 @@
+[
+ {
+  "file": "frame_0001.png",
+  "run": 0,
+  "cold": true,
+  "json_ok": true,
+  "schema_ok": true,
+  "errors": [],
+  "obj": {
+   "scene": "corridor",
+   "visible_openings": [
+    "forward",
+    "right"
+   ],
+   "person_detected": false,
+   "obstacle_ahead": false,
+   "confidence": 0.8,
+   "evidence": "The drone is in a corridor with a dark shape to the left and a green base."
+  },
+  "wall_s": 57.66979455500041,
+  "prompt_tokens": 412,
+  "gen_tokens": 65,
+  "load_s": 4.339387691,
+  "eval_s": 6.765263
+ },
+ {
+  "file": "frame_0001.png",
+  "run": 1,
+  "cold": false,
+  "json_ok": true,
+  "schema_ok": true,
+  "errors": [],
+  "obj": {
+   "scene": "corridor",
+   "visible_openings": [
+    "forward",
+    "right"
+   ],
+   "person_detected": false,
+   "obstacle_ahead": false,
+   "confidence": 0.8,
+   "evidence": "The drone is in a corridor with a doorway visible to the right."
+  },
+  "wall_s": 6.906087153000044,
+  "prompt_tokens": 412,
+  "gen_tokens": 61,
+  "load_s": 0.001148201,
+  "eval_s": 6.502616
+ },
+ {
+  "file": "frame_0001.png",
+  "run": 2,
+  "cold": false,
+  "json_ok": true,
+  "schema_ok": true,
+  "errors": [],
+  "obj": {
+   "scene": "corridor",
+   "visible_openings": [
+    "forward",
+    "right"
+   ],
+   "person_detected": false,
+   "obstacle_ahead": false,
+   "confidence": 0.8,
+   "evidence": "The drone is in a corridor with a doorway visible to the right."
+  },
+  "wall_s": 7.096487122000326,
+  "prompt_tokens": 412,
+  "gen_tokens": 61,
+  "load_s": 0.001434613,
+  "eval_s": 6.706861
+ },
+ {
+  "file": "frame_0002.png",
+  "run": 0,
+  "cold": false,
+  "json_ok": true,
+  "schema_ok": true,
+  "errors": [],
+  "obj": {
+   "scene": "corridor",
+   "visible_openings": [
+    "forward",
+    "right"
+   ],
+   "person_detected": false,
+   "obstacle_ahead": false,
+   "confidence": 0.8,
+   "evidence": "The drone is in a corridor with a doorway visible to the right."
+  },
+  "wall_s": 6.8665241790004075,
+  "prompt_tokens": 412,
+  "gen_tokens": 61,
+  "load_s": 0.001291229,
+  "eval_s": 6.443737
+ },
+ {
+  "file": "frame_0002.png",
+  "run": 1,
+  "cold": false,
+  "json_ok": true,
+  "schema_ok": true,
+  "errors": [],
+  "obj": {
+   "scene": "corridor",
+   "visible_openings": [
+    "forward",
+    "right"
+   ],
+   "person_detected": false,
+   "obstacle_ahead": false,
+   "confidence": 0.8,
+   "evidence": "The drone is in a corridor with a doorway visible to the right."
+  },
+  "wall_s": 7.065643112999169,
+  "prompt_tokens": 412,
+  "gen_tokens": 61,
+  "load_s": 0.001617047,
+  "eval_s": 6.660743
+ },
+ {
+  "file": "frame_0002.png",
+  "run": 2,
+  "cold": false,
+  "json_ok": true,
+  "schema_ok": true,
+  "errors": [],
+  "obj": {
+   "scene": "corridor",
+   "visible_openings": [
+    "forward",
+    "right"
+   ],
+   "person_detected": false,
+   "obstacle_ahead": false,
+   "confidence": 0.8,
+   "evidence": "The drone is in a corridor with a doorway visible to the right."
+  },
+  "wall_s": 6.734846665000077,
+  "prompt_tokens": 412,
+  "gen_tokens": 61,
+  "load_s": 0.000772948,
+  "eval_s": 6.300016
+ },
+ {
+  "file": "frame_0003.png",
+  "run": 0,
+  "cold": false,
+  "json_ok": true,
+  "schema_ok": true,
+  "errors": [],
+  "obj": {
+   "scene": "corridor",
+   "visible_openings": [
+    "forward"
+   ],
+   "person_detected": false,
+   "obstacle_ahead": false,
+   "confidence": 0.95,
+   "evidence": "The drone is in a corridor with a green floor and grey walls."
+  },
+  "wall_s": 58.13712128100087,
+  "prompt_tokens": 412,
+  "gen_tokens": 59,
+  "load_s": 0.003886461,
+  "eval_s": 6.016748
+ },
+ {
+  "file": "frame_0003.png",
+  "run": 1,
+  "cold": false,
+  "json_ok": true,
+  "schema_ok": true,
+  "errors": [],
+  "obj": {
+   "scene": "corridor",
+   "visible_openings": [
+    "forward"
+   ],
+   "person_detected": false,
+   "obstacle_ahead": false,
+   "confidence": 0.9,
+   "evidence": "The drone is in a corridor with a green floor and grey walls."
+  },
+  "wall_s": 6.548918258000413,
+  "prompt_tokens": 412,
+  "gen_tokens": 58,
+  "load_s": 0.000935451,
+  "eval_s": 6.121782
+ },
+ {
+  "file": "frame_0003.png",
+  "run": 2,
+  "cold": false,
+  "json_ok": true,
+  "schema_ok": true,
+  "errors": [],
+  "obj": {
+   "scene": "corridor",
+   "visible_openings": [
+    "forward"
+   ],
+   "person_detected": false,
+   "obstacle_ahead": false,
+   "confidence": 0.9,
+   "evidence": "The drone is in a corridor with a green floor and grey walls."
+  },
+  "wall_s": 6.514873713998895,
+  "prompt_tokens": 412,
+  "gen_tokens": 58,
+  "load_s": 0.000794765,
+  "eval_s": 6.07295
+ },
+ {
+  "file": "frame_0004.png",
+  "run": 0,
+  "cold": false,
+  "json_ok": true,
+  "schema_ok": true,
+  "errors": [],
+  "obj": {
+   "scene": "corridor",
+   "visible_openings": [
+    "forward"
+   ],
+   "person_detected": false,
+   "obstacle_ahead": false,
+   "confidence": 0.9,
+   "evidence": "The drone is in a corridor with a green floor and grey walls."
+  },
+  "wall_s": 6.557033256998693,
+  "prompt_tokens": 412,
+  "gen_tokens": 58,
+  "load_s": 0.001108379,
+  "eval_s": 6.099169
+ },
+ {
+  "file": "frame_0004.png",
+  "run": 1,
+  "cold": false,
+  "json_ok": true,
+  "schema_ok": true,
+  "errors": [],
+  "obj": {
+   "scene": "corridor",
+   "visible_openings": [
+    "forward"
+   ],
+   "person_detected": false,
+   "obstacle_ahead": false,
+   "confidence": 0.9,
+   "evidence": "The drone is in a corridor with a green floor and grey walls."
+  },
+  "wall_s": 6.765968981999322,
+  "prompt_tokens": 412,
+  "gen_tokens": 58,
+  "load_s": 0.00120206,
+  "eval_s": 6.332873
+ },
+ {
+  "file": "frame_0004.png",
+  "run": 2,
+  "cold": false,
+  "json_ok": true,
+  "schema_ok": true,
+  "errors": [],
+  "obj": {
+   "scene": "corridor",
+   "visible_openings": [
+    "forward"
+   ],
+   "person_detected": false,
+   "obstacle_ahead": false,
+   "confidence": 0.9,
+   "evidence": "The drone is in a corridor with a green floor and grey walls."
+  },
+  "wall_s": 6.712574499999391,
+  "prompt_tokens": 412,
+  "gen_tokens": 58,
+  "load_s": 0.001157611,
+  "eval_s": 6.277163
+ },
+ {
+  "file": "frame_0005.png",
+  "run": 0,
+  "cold": false,
+  "json_ok": true,
+  "schema_ok": true,
+  "errors": [],
+  "obj": {
+   "scene": "corridor",
+   "visible_openings": [
+    "forward",
+    "right"
+   ],
+   "person_detected": false,
+   "obstacle_ahead": false,
+   "confidence": 0.9,
+   "evidence": "The drone is in a long corridor with a slight curve to the right."
+  },
+  "wall_s": 58.342774532000476,
+  "prompt_tokens": 412,
+  "gen_tokens": 62,
+  "load_s": 0.000990072,
+  "eval_s": 6.358692
+ },
+ {
+  "file": "frame_0005.png",
+  "run": 1,
+  "cold": false,
+  "json_ok": true,
+  "schema_ok": true,
+  "errors": [],
+  "obj": {
+   "scene": "corridor",
+   "visible_openings": [
+    "forward",
+    "right"
+   ],
+   "person_detected": false,
+   "obstacle_ahead": false,
+   "confidence": 0.9,
+   "evidence": "The drone is in a long corridor with a slight curve to the right."
+  },
+  "wall_s": 6.887046824000208,
+  "prompt_tokens": 412,
+  "gen_tokens": 62,
+  "load_s": 0.000754988,
+  "eval_s": 6.462088
+ },
+ {
+  "file": "frame_0005.png",
+  "run": 2,
+  "cold": false,
+  "json_ok": true,
+  "schema_ok": true,
+  "errors": [],
+  "obj": {
+   "scene": "corridor",
+   "visible_openings": [
+    "forward",
+    "right"
+   ],
+   "person_detected": false,
+   "obstacle_ahead": false,
+   "confidence": 0.9,
+   "evidence": "The drone is in a long corridor with a slight curve to the right."
+  },
+  "wall_s": 6.985822365000786,
+  "prompt_tokens": 412,
+  "gen_tokens": 62,
+  "load_s": 0.000896615,
+  "eval_s": 6.558274
+ },
+ {
+  "file": "frame_0006.png",
+  "run": 0,
+  "cold": false,
+  "json_ok": true,
+  "schema_ok": true,
+  "errors": [],
+  "obj": {
+   "scene": "corridor",
+   "visible_openings": [
+    "forward",
+    "right"
+   ],
+   "person_detected": false,
+   "obstacle_ahead": false,
+   "confidence": 0.9,
+   "evidence": "The drone is in a long corridor with a slight curve to the right."
+  },
+  "wall_s": 6.655871249000484,
+  "prompt_tokens": 412,
+  "gen_tokens": 62,
+  "load_s": 0.001084069,
+  "eval_s": 6.189835
+ },
+ {
+  "file": "frame_0006.png",
+  "run": 1,
+  "cold": false,
+  "json_ok": true,
+  "schema_ok": true,
+  "errors": [],
+  "obj": {
+   "scene": "corridor",
+   "visible_openings": [
+    "forward",
+    "right"
+   ],
+   "person_detected": false,
+   "obstacle_ahead": false,
+   "confidence": 0.9,
+   "evidence": "The drone is in a long corridor with a slight curve to the right."
+  },
+  "wall_s": 6.9577303969999775,
+  "prompt_tokens": 412,
+  "gen_tokens": 62,
+  "load_s": 0.001081226,
+  "eval_s": 6.513675
+ },
+ {
+  "file": "frame_0006.png",
+  "run": 2,
+  "cold": false,
+  "json_ok": true,
+  "schema_ok": true,
+  "errors": [],
+  "obj": {
+   "scene": "corridor",
+   "visible_openings": [
+    "forward",
+    "right"
+   ],
+   "person_detected": false,
+   "obstacle_ahead": false,
+   "confidence": 0.9,
+   "evidence": "The drone is in a long corridor with a slight curve to the right."
+  },
+  "wall_s": 6.668676174000211,
+  "prompt_tokens": 412,
+  "gen_tokens": 62,
+  "load_s": 0.001048644,
+  "eval_s": 6.237848
+ },
+ {
+  "file": "frame_0007.png",
+  "run": 0,
+  "cold": false,
+  "json_ok": true,
+  "schema_ok": true,
+  "errors": [],
+  "obj": {
+   "scene": "corridor",
+   "visible_openings": [
+    "forward",
+    "right"
+   ],
+   "person_detected": false,
+   "obstacle_ahead": false,
+   "confidence": 0.8,
+   "evidence": "The drone is in a corridor with a green floor and grey walls."
+  },
+  "wall_s": 59.04825746499955,
+  "prompt_tokens": 412,
+  "gen_tokens": 61,
+  "load_s": 0.001138337,
+  "eval_s": 6.208321
+ },
+ {
+  "file": "frame_0007.png",
+  "run": 1,
+  "cold": false,
+  "json_ok": true,
+  "schema_ok": true,
+  "errors": [],
+  "obj": {
+   "scene": "corridor",
+   "visible_openings": [
+    "forward",
+    "right"
+   ],
+   "person_detected": false,
+   "obstacle_ahead": false,
+   "confidence": 0.9,
+   "evidence": "The drone is in a corridor with a green floor and grey walls."
+  },
+  "wall_s": 6.87558794799952,
+  "prompt_tokens": 412,
+  "gen_tokens": 61,
+  "load_s": 0.000978766,
+  "eval_s": 6.470763
+ },
+ {
+  "file": "frame_0007.png",
+  "run": 2,
+  "cold": false,
+  "json_ok": true,
+  "schema_ok": true,
+  "errors": [],
+  "obj": {
+   "scene": "corridor",
+   "visible_openings": [
+    "forward",
+    "right"
+   ],
+   "person_detected": false,
+   "obstacle_ahead": false,
+   "confidence": 0.9,
+   "evidence": "The drone is in a corridor with a green floor and grey walls."
+  },
+  "wall_s": 7.014180976000716,
+  "prompt_tokens": 412,
+  "gen_tokens": 61,
+  "load_s": 0.001165306,
+  "eval_s": 6.579723
+ },
+ {
+  "file": "frame_0008.png",
+  "run": 0,
+  "cold": false,
+  "json_ok": true,
+  "schema_ok": true,
+  "errors": [],
+  "obj": {
+   "scene": "corridor",
+   "visible_openings": [
+    "forward"
+   ],
+   "person_detected": false,
+   "obstacle_ahead": false,
+   "confidence": 0.9,
+   "evidence": "The drone is in a corridor with a green floor and grey walls."
+  },
+  "wall_s": 59.84876190199975,
+  "prompt_tokens": 412,
+  "gen_tokens": 58,
+  "load_s": 0.001529532,
+  "eval_s": 6.20206
+ },
+ {
+  "file": "frame_0008.png",
+  "run": 1,
+  "cold": false,
+  "json_ok": true,
+  "schema_ok": true,
+  "errors": [],
+  "obj": {
+   "scene": "corridor",
+   "visible_openings": [
+    "forward"
+   ],
+   "person_detected": false,
+   "obstacle_ahead": false,
+   "confidence": 0.95,
+   "evidence": "The drone is in a corridor with a green floor and grey walls."
+  },
+  "wall_s": 6.902956138001173,
+  "prompt_tokens": 412,
+  "gen_tokens": 59,
+  "load_s": 0.001184072,
+  "eval_s": 6.459372
+ },
+ {
+  "file": "frame_0008.png",
+  "run": 2,
+  "cold": false,
+  "json_ok": true,
+  "schema_ok": true,
+  "errors": [],
+  "obj": {
+   "scene": "corridor",
+   "visible_openings": [
+    "forward"
+   ],
+   "person_detected": false,
+   "obstacle_ahead": false,
+   "confidence": 0.95,
+   "evidence": "The drone is in a corridor with a green floor and grey walls."
+  },
+  "wall_s": 6.587397608000174,
+  "prompt_tokens": 412,
+  "gen_tokens": 59,
+  "load_s": 0.001233995,
+  "eval_s": 6.161796
+ },
+ {
+  "file": "frame_0009.png",
+  "run": 0,
+  "cold": false,
+  "json_ok": true,
+  "schema_ok": true,
+  "errors": [],
+  "obj": {
+   "scene": "corridor",
+   "visible_openings": [
+    "forward"
+   ],
+   "person_detected": false,
+   "obstacle_ahead": false,
+   "confidence": 0.9,
+   "evidence": "The drone is in a corridor with a green floor and grey walls."
+  },
+  "wall_s": 58.671619707998616,
+  "prompt_tokens": 412,
+  "gen_tokens": 58,
+  "load_s": 0.001460331,
+  "eval_s": 6.055856
+ },
+ {
+  "file": "frame_0009.png",
+  "run": 1,
+  "cold": false,
+  "json_ok": true,
+  "schema_ok": true,
+  "errors": [],
+  "obj": {
+   "scene": "corridor",
+   "visible_openings": [
+    "forward"
+   ],
+   "person_detected": false,
+   "obstacle_ahead": false,
+   "confidence": 0.9,
+   "evidence": "The drone is in a corridor with a green floor and grey walls."
+  },
+  "wall_s": 6.62285873700057,
+  "prompt_tokens": 412,
+  "gen_tokens": 58,
+  "load_s": 0.001575028,
+  "eval_s": 6.232881
+ },
+ {
+  "file": "frame_0009.png",
+  "run": 2,
+  "cold": false,
+  "json_ok": true,
+  "schema_ok": true,
+  "errors": [],
+  "obj": {
+   "scene": "corridor",
+   "visible_openings": [
+    "forward"
+   ],
+   "person_detected": false,
+   "obstacle_ahead": false,
+   "confidence": 0.9,
+   "evidence": "The drone is in a corridor with a green floor and grey walls."
+  },
+  "wall_s": 6.651518279999436,
+  "prompt_tokens": 412,
+  "gen_tokens": 58,
+  "load_s": 0.001380576,
+  "eval_s": 6.262953
+ },
+ {
+  "file": "frame_0010.png",
+  "run": 0,
+  "cold": false,
+  "json_ok": true,
+  "schema_ok": true,
+  "errors": [],
+  "obj": {
+   "scene": "corridor",
+   "visible_openings": [
+    "forward"
+   ],
+   "person_detected": false,
+   "obstacle_ahead": false,
+   "confidence": 0.9,
+   "evidence": "The drone is in a corridor with a green floor and grey walls."
+  },
+  "wall_s": 60.67240432200015,
+  "prompt_tokens": 412,
+  "gen_tokens": 58,
+  "load_s": 0.001233732,
+  "eval_s": 6.068843
+ },
+ {
+  "file": "frame_0010.png",
+  "run": 1,
+  "cold": false,
+  "json_ok": true,
+  "schema_ok": true,
+  "errors": [],
+  "obj": {
+   "scene": "corridor",
+   "visible_openings": [
+    "forward",
+    "right"
+   ],
+   "person_detected": false,
+   "obstacle_ahead": false,
+   "confidence": 0.8,
+   "evidence": "The drone is in a corridor with a green floor and grey walls."
+  },
+  "wall_s": 6.923220664999462,
+  "prompt_tokens": 412,
+  "gen_tokens": 61,
+  "load_s": 0.001063147,
+  "eval_s": 6.486598
+ },
+ {
+  "file": "frame_0010.png",
+  "run": 2,
+  "cold": false,
+  "json_ok": true,
+  "schema_ok": true,
+  "errors": [],
+  "obj": {
+   "scene": "corridor",
+   "visible_openings": [
+    "forward",
+    "right"
+   ],
+   "person_detected": false,
+   "obstacle_ahead": false,
+   "confidence": 0.8,
+   "evidence": "The drone is in a corridor with a green floor and grey walls."
+  },
+  "wall_s": 6.890846750000492,
+  "prompt_tokens": 412,
+  "gen_tokens": 61,
+  "load_s": 0.000845736,
+  "eval_s": 6.481417
+ },
+ {
+  "file": "frame_0011.png",
+  "run": 0,
+  "cold": false,
+  "json_ok": true,
+  "schema_ok": true,
+  "errors": [],
+  "obj": {
+   "scene": "corridor",
+   "visible_openings": [
+    "forward",
+    "right"
+   ],
+   "person_detected": false,
+   "obstacle_ahead": false,
+   "confidence": 0.8,
+   "evidence": "The drone is in a corridor with a shadow to the right and a clear view forward."
+  },
+  "wall_s": 63.0220701369999,
+  "prompt_tokens": 412,
+  "gen_tokens": 65,
+  "load_s": 0.000975477,
+  "eval_s": 6.990792
+ },
+ {
+  "file": "frame_0011.png",
+  "run": 1,
+  "cold": false,
+  "json_ok": true,
+  "schema_ok": true,
+  "errors": [],
+  "obj": {
+   "scene": "corridor",
+   "visible_openings": [
+    "forward",
+    "right"
+   ],
+   "person_detected": false,
+   "obstacle_ahead": false,
+   "confidence": 0.8,
+   "evidence": "The drone is in a corridor with a shadow to the right and a clear view forward."
+  },
+  "wall_s": 7.0284321939998335,
+  "prompt_tokens": 412,
+  "gen_tokens": 65,
+  "load_s": 0.001084019,
+  "eval_s": 6.613356
+ },
+ {
+  "file": "frame_0011.png",
+  "run": 2,
+  "cold": false,
+  "json_ok": true,
+  "schema_ok": true,
+  "errors": [],
+  "obj": {
+   "scene": "corridor",
+   "visible_openings": [
+    "forward",
+    "right"
+   ],
+   "person_detected": false,
+   "obstacle_ahead": false,
+   "confidence": 0.8,
+   "evidence": "The drone is in a corridor with a shadow to the right and a clear view forward."
+  },
+  "wall_s": 7.295752821999486,
+  "prompt_tokens": 412,
+  "gen_tokens": 65,
+  "load_s": 0.001226709,
+  "eval_s": 6.877432
+ },
+ {
+  "file": "frame_0012.png",
+  "run": 0,
+  "cold": false,
+  "json_ok": true,
+  "schema_ok": true,
+  "errors": [],
+  "obj": {
+   "scene": "corridor",
+   "visible_openings": [
+    "forward",
+    "right"
+   ],
+   "person_detected": false,
+   "obstacle_ahead": false,
+   "confidence": 0.8,
+   "evidence": "The drone is in a corridor with a shadow to the right and a clear view forward."
+  },
+  "wall_s": 7.4784370090001175,
+  "prompt_tokens": 412,
+  "gen_tokens": 65,
+  "load_s": 0.001049912,
+  "eval_s": 7.050956
+ },
+ {
+  "file": "frame_0012.png",
+  "run": 1,
+  "cold": false,
+  "json_ok": true,
+  "schema_ok": true,
+  "errors": [],
+  "obj": {
+   "scene": "corridor",
+   "visible_openings": [
+    "forward",
+    "right"
+   ],
+   "person_detected": false,
+   "obstacle_ahead": false,
+   "confidence": 0.8,
+   "evidence": "The drone is in a corridor with a shadow to the right and a clear view forward."
+  },
+  "wall_s": 7.2371797489995515,
+  "prompt_tokens": 412,
+  "gen_tokens": 65,
+  "load_s": 0.000943989,
+  "eval_s": 6.826418
+ },
+ {
+  "file": "frame_0012.png",
+  "run": 2,
+  "cold": false,
+  "json_ok": true,
+  "schema_ok": true,
+  "errors": [],
+  "obj": {
+   "scene": "corridor",
+   "visible_openings": [
+    "forward",
+    "right"
+   ],
+   "person_detected": false,
+   "obstacle_ahead": false,
+   "confidence": 0.8,
+   "evidence": "The drone is in a corridor with a shadow to the right and a clear view forward."
+  },
+  "wall_s": 7.693971145999967,
+  "prompt_tokens": 412,
+  "gen_tokens": 65,
+  "load_s": 0.002847855,
+  "eval_s": 7.257697
+ },
+ {
+  "file": "frame_0013.png",
+  "run": 0,
+  "cold": false,
+  "json_ok": true,
+  "schema_ok": true,
+  "errors": [],
+  "obj": {
+   "scene": "corridor",
+   "visible_openings": [
+    "forward",
+    "right"
+   ],
+   "person_detected": false,
+   "obstacle_ahead": false,
+   "confidence": 0.95,
+   "evidence": "The image shows a grey corridor with a white bottom and black top."
+  },
+  "wall_s": 63.165596854001706,
+  "prompt_tokens": 412,
+  "gen_tokens": 62,
+  "load_s": 0.001291395,
+  "eval_s": 6.498793
+ },
+ {
+  "file": "frame_0013.png",
+  "run": 1,
+  "cold": false,
+  "json_ok": true,
+  "schema_ok": true,
+  "errors": [],
+  "obj": {
+   "scene": "corridor",
+   "visible_openings": [
+    "forward",
+    "right"
+   ],
+   "person_detected": false,
+   "obstacle_ahead": false,
+   "confidence": 0.95,
+   "evidence": "The corridor continues forward and to the right."
+  },
+  "wall_s": 6.386134281001432,
+  "prompt_tokens": 412,
+  "gen_tokens": 57,
+  "load_s": 0.001009772,
+  "eval_s": 5.949446
+ },
+ {
+  "file": "frame_0013.png",
+  "run": 2,
+  "cold": false,
+  "json_ok": true,
+  "schema_ok": true,
+  "errors": [],
+  "obj": {
+   "scene": "corridor",
+   "visible_openings": [
+    "forward",
+    "right"
+   ],
+   "person_detected": false,
+   "obstacle_ahead": false,
+   "confidence": 0.95,
+   "evidence": "The corridor continues forward and to the right."
+  },
+  "wall_s": 6.5113515370030655,
+  "prompt_tokens": 412,
+  "gen_tokens": 57,
+  "load_s": 0.002517796,
+  "eval_s": 6.09904
+ },
+ {
+  "file": "frame_0014.png",
+  "run": 0,
+  "cold": false,
+  "json_ok": true,
+  "schema_ok": true,
+  "errors": [],
+  "obj": {
+   "scene": "corridor",
+   "visible_openings": [
+    "forward",
+    "right"
+   ],
+   "person_detected": false,
+   "obstacle_ahead": false,
+   "confidence": 0.95,
+   "evidence": "The corridor continues forward and to the right."
+  },
+  "wall_s": 6.387340157998551,
+  "prompt_tokens": 412,
+  "gen_tokens": 57,
+  "load_s": 0.001226492,
+  "eval_s": 5.959289
+ },
+ {
+  "file": "frame_0014.png",
+  "run": 1,
+  "cold": false,
+  "json_ok": true,
+  "schema_ok": true,
+  "errors": [],
+  "obj": {
+   "scene": "corridor",
+   "visible_openings": [
+    "forward",
+    "right"
+   ],
+   "person_detected": false,
+   "obstacle_ahead": false,
+   "confidence": 0.95,
+   "evidence": "The corridor continues forward and to the right."
+  },
+  "wall_s": 6.767518494998512,
+  "prompt_tokens": 412,
+  "gen_tokens": 57,
+  "load_s": 0.001044841,
+  "eval_s": 6.329807
+ },
+ {
+  "file": "frame_0014.png",
+  "run": 2,
+  "cold": false,
+  "json_ok": true,
+  "schema_ok": true,
+  "errors": [],
+  "obj": {
+   "scene": "corridor",
+   "visible_openings": [
+    "forward",
+    "right"
+   ],
+   "person_detected": false,
+   "obstacle_ahead": false,
+   "confidence": 0.95,
+   "evidence": "The corridor continues forward and to the right."
+  },
+  "wall_s": 6.769565709997551,
+  "prompt_tokens": 412,
+  "gen_tokens": 57,
+  "load_s": 0.001165308,
+  "eval_s": 6.347975
+ },
+ {
+  "file": "frame_0015.png",
+  "run": 0,
+  "cold": false,
+  "json_ok": true,
+  "schema_ok": true,
+  "errors": [],
+  "obj": {
+   "scene": "corridor",
+   "visible_openings": [
+    "forward",
+    "right"
+   ],
+   "person_detected": false,
+   "obstacle_ahead": false,
+   "confidence": 0.8,
+   "evidence": "The drone is in a grey corridor with walls on either side."
+  },
+  "wall_s": 61.52249341300194,
+  "prompt_tokens": 412,
+  "gen_tokens": 60,
+  "load_s": 0.001071633,
+  "eval_s": 5.921771
+ },
+ {
+  "file": "frame_0015.png",
+  "run": 1,
+  "cold": false,
+  "json_ok": true,
+  "schema_ok": true,
+  "errors": [],
+  "obj": {
+   "scene": "corridor",
+   "visible_openings": [
+    "forward",
+    "right"
+   ],
+   "person_detected": false,
+   "obstacle_ahead": false,
+   "confidence": 0.8,
+   "evidence": "The drone is in a grey corridor with walls on either side."
+  },
+  "wall_s": 6.785829565000313,
+  "prompt_tokens": 412,
+  "gen_tokens": 60,
+  "load_s": 0.000910643,
+  "eval_s": 6.376566
+ },
+ {
+  "file": "frame_0015.png",
+  "run": 2,
+  "cold": false,
+  "json_ok": true,
+  "schema_ok": true,
+  "errors": [],
+  "obj": {
+   "scene": "corridor",
+   "visible_openings": [
+    "forward",
+    "right"
+   ],
+   "person_detected": false,
+   "obstacle_ahead": false,
+   "confidence": 0.8,
+   "evidence": "The drone is in a grey corridor with walls on either side."
+  },
+  "wall_s": 7.073422256999038,
+  "prompt_tokens": 412,
+  "gen_tokens": 60,
+  "load_s": 0.000924621,
+  "eval_s": 6.663204
+ },
+ {
+  "file": "frame_0016.png",
+  "run": 0,
+  "cold": false,
+  "json_ok": true,
+  "schema_ok": true,
+  "errors": [],
+  "obj": {
+   "scene": "corridor",
+   "visible_openings": [
+    "forward",
+    "right"
+   ],
+   "person_detected": false,
+   "obstacle_ahead": false,
+   "confidence": 0.8,
+   "evidence": "The drone is in a grey corridor with walls on either side."
+  },
+  "wall_s": 7.297118944999966,
+  "prompt_tokens": 412,
+  "gen_tokens": 60,
+  "load_s": 0.001367537,
+  "eval_s": 6.845451
+ },
+ {
+  "file": "frame_0016.png",
+  "run": 1,
+  "cold": false,
+  "json_ok": true,
+  "schema_ok": true,
+  "errors": [],
+  "obj": {
+   "scene": "corridor",
+   "visible_openings": [
+    "forward",
+    "right"
+   ],
+   "person_detected": false,
+   "obstacle_ahead": false,
+   "confidence": 0.8,
+   "evidence": "The drone is in a grey corridor with walls on either side."
+  },
+  "wall_s": 7.311560013997223,
+  "prompt_tokens": 412,
+  "gen_tokens": 60,
+  "load_s": 0.000832092,
+  "eval_s": 6.903185
+ },
+ {
+  "file": "frame_0016.png",
+  "run": 2,
+  "cold": false,
+  "json_ok": true,
+  "schema_ok": true,
+  "errors": [],
+  "obj": {
+   "scene": "corridor",
+   "visible_openings": [
+    "forward",
+    "right"
+   ],
+   "person_detected": false,
+   "obstacle_ahead": false,
+   "confidence": 0.8,
+   "evidence": "The drone is in a grey corridor with walls on either side."
+  },
+  "wall_s": 7.277014735998819,
+  "prompt_tokens": 412,
+  "gen_tokens": 60,
+  "load_s": 0.001131543,
+  "eval_s": 6.814992
+ },
+ {
+  "file": "frame_0017.png",
+  "run": 0,
+  "cold": false,
+  "json_ok": true,
+  "schema_ok": true,
+  "errors": [],
+  "obj": {
+   "scene": "corridor",
+   "visible_openings": [
+    "forward",
+    "right"
+   ],
+   "person_detected": false,
+   "obstacle_ahead": false,
+   "confidence": 0.8,
+   "evidence": "The drone is in a straight corridor with walls on either side."
+  },
+  "wall_s": 62.53490649599917,
+  "prompt_tokens": 412,
+  "gen_tokens": 60,
+  "load_s": 0.000932631,
+  "eval_s": 6.183277
+ },
+ {
+  "file": "frame_0017.png",
+  "run": 1,
+  "cold": false,
+  "json_ok": true,
+  "schema_ok": true,
+  "errors": [],
+  "obj": {
+   "scene": "corridor",
+   "visible_openings": [
+    "forward",
+    "right"
+   ],
+   "person_detected": false,
+   "obstacle_ahead": false,
+   "confidence": 0.8,
+   "evidence": "The drone is in a straight corridor with walls on either side."
+  },
+  "wall_s": 6.926378434000071,
+  "prompt_tokens": 412,
+  "gen_tokens": 60,
+  "load_s": 0.001099278,
+  "eval_s": 6.47628
+ },
+ {
+  "file": "frame_0017.png",
+  "run": 2,
+  "cold": false,
+  "json_ok": true,
+  "schema_ok": true,
+  "errors": [],
+  "obj": {
+   "scene": "corridor",
+   "visible_openings": [
+    "forward",
+    "right"
+   ],
+   "person_detected": false,
+   "obstacle_ahead": false,
+   "confidence": 0.8,
+   "evidence": "The drone is in a straight corridor with walls on either side."
+  },
+  "wall_s": 6.781136728001002,
+  "prompt_tokens": 412,
+  "gen_tokens": 60,
+  "load_s": 0.001063001,
+  "eval_s": 6.357817
+ },
+ {
+  "file": "frame_0018.png",
+  "run": 0,
+  "cold": false,
+  "json_ok": true,
+  "schema_ok": true,
+  "errors": [],
+  "obj": {
+   "scene": "corridor",
+   "visible_openings": [
+    "forward",
+    "right"
+   ],
+   "person_detected": false,
+   "obstacle_ahead": false,
+   "confidence": 0.8,
+   "evidence": "The drone is in a straight corridor with walls on either side."
+  },
+  "wall_s": 6.718614432000322,
+  "prompt_tokens": 412,
+  "gen_tokens": 60,
+  "load_s": 0.000936588,
+  "eval_s": 6.282803
+ },
+ {
+  "file": "frame_0018.png",
+  "run": 1,
+  "cold": false,
+  "json_ok": true,
+  "schema_ok": true,
+  "errors": [],
+  "obj": {
+   "scene": "corridor",
+   "visible_openings": [
+    "forward",
+    "right"
+   ],
+   "person_detected": false,
+   "obstacle_ahead": false,
+   "confidence": 0.8,
+   "evidence": "The drone is in a straight corridor with walls on either side."
+  },
+  "wall_s": 7.019524220002495,
+  "prompt_tokens": 412,
+  "gen_tokens": 60,
+  "load_s": 0.000947292,
+  "eval_s": 6.589325
+ },
+ {
+  "file": "frame_0018.png",
+  "run": 2,
+  "cold": false,
+  "json_ok": true,
+  "schema_ok": true,
+  "errors": [],
+  "obj": {
+   "scene": "corridor",
+   "visible_openings": [
+    "forward",
+    "right"
+   ],
+   "person_detected": false,
+   "obstacle_ahead": false,
+   "confidence": 0.8,
+   "evidence": "The drone is in a straight corridor with walls on either side."
+  },
+  "wall_s": 7.251725783000438,
+  "prompt_tokens": 412,
+  "gen_tokens": 60,
+  "load_s": 0.001210453,
+  "eval_s": 6.822835
+ },
+ {
+  "file": "frame_0019.png",
+  "run": 0,
+  "cold": false,
+  "json_ok": true,
+  "schema_ok": true,
+  "errors": [],
+  "obj": {
+   "scene": "corridor",
+   "visible_openings": [
+    "forward",
+    "right"
+   ],
+   "person_detected": false,
+   "obstacle_ahead": false,
+   "confidence": 0.8,
+   "evidence": "The drone is in a straight corridor with walls on either side."
+  },
+  "wall_s": 7.355516150000767,
+  "prompt_tokens": 412,
+  "gen_tokens": 60,
+  "load_s": 0.001052643,
+  "eval_s": 6.929002
+ },
+ {
+  "file": "frame_0019.png",
+  "run": 1,
+  "cold": false,
+  "json_ok": true,
+  "schema_ok": true,
+  "errors": [],
+  "obj": {
+   "scene": "corridor",
+   "visible_openings": [
+    "forward",
+    "right"
+   ],
+   "person_detected": false,
+   "obstacle_ahead": false,
+   "confidence": 0.8,
+   "evidence": "The drone is in a straight corridor with walls on either side."
+  },
+  "wall_s": 7.534729940998659,
+  "prompt_tokens": 412,
+  "gen_tokens": 60,
+  "load_s": 0.001220025,
+  "eval_s": 7.086954
+ },
+ {
+  "file": "frame_0019.png",
+  "run": 2,
+  "cold": false,
+  "json_ok": true,
+  "schema_ok": true,
+  "errors": [],
+  "obj": {
+   "scene": "corridor",
+   "visible_openings": [
+    "forward",
+    "right"
+   ],
+   "person_detected": false,
+   "obstacle_ahead": false,
+   "confidence": 0.8,
+   "evidence": "The drone is in a straight corridor with walls on either side."
+  },
+  "wall_s": 7.250624225998763,
+  "prompt_tokens": 412,
+  "gen_tokens": 60,
+  "load_s": 0.001297386,
+  "eval_s": 6.790986
+ },
+ {
+  "file": "frame_0020.png",
+  "run": 0,
+  "cold": false,
+  "json_ok": true,
+  "schema_ok": true,
+  "errors": [],
+  "obj": {
+   "scene": "corridor",
+   "visible_openings": [
+    "forward"
+   ],
+   "person_detected": false,
+   "obstacle_ahead": false,
+   "confidence": 0.95,
+   "evidence": "The drone is positioned in a straight corridor with walls on either side."
+  },
+  "wall_s": 59.36541638900235,
+  "prompt_tokens": 412,
+  "gen_tokens": 59,
+  "load_s": 0.001127338,
+  "eval_s": 6.288044
+ },
+ {
+  "file": "frame_0020.png",
+  "run": 1,
+  "cold": false,
+  "json_ok": true,
+  "schema_ok": true,
+  "errors": [],
+  "obj": {
+   "scene": "corridor",
+   "visible_openings": [
+    "forward"
+   ],
+   "person_detected": false,
+   "obstacle_ahead": false,
+   "confidence": 0.95,
+   "evidence": "The drone is positioned in a straight corridor with walls on either side."
+  },
+  "wall_s": 6.59748785299962,
+  "prompt_tokens": 412,
+  "gen_tokens": 59,
+  "load_s": 0.001147603,
+  "eval_s": 6.205086
+ },
+ {
+  "file": "frame_0020.png",
+  "run": 2,
+  "cold": false,
+  "json_ok": true,
+  "schema_ok": true,
+  "errors": [],
+  "obj": {
+   "scene": "corridor",
+   "visible_openings": [
+    "forward"
+   ],
+   "person_detected": false,
+   "obstacle_ahead": false,
+   "confidence": 0.95,
+   "evidence": "The drone is positioned in a straight corridor with walls on either side."
+  },
+  "wall_s": 7.080482156001381,
+  "prompt_tokens": 412,
+  "gen_tokens": 59,
+  "load_s": 0.001123248,
+  "eval_s": 6.651636
+ }
+]
