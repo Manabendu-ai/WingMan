@@ -34,6 +34,18 @@ In this mode the site is read-only. It displays the remote RGB stream, map,
 odometry/PX4 telemetry, RGB-D metadata, and stale-data health. Mission
 commands remain disabled until the ROS command interfaces are finalized.
 
+For the currently available camera stream, run the dashboard on the laptop
+with:
+
+```bash
+python -m wingman_dashboard --mock \
+  --host 0.0.0.0 \
+  --remote-video 'http://192.168.128.220:8080/stream?topic=/world/maze_exploration/model/x500_gps_denied_0/link/camera_link/sensor/IMX214/image'
+```
+
+Then open `http://127.0.0.1:8000/`. The remote video URL can also be supplied
+with `WINGMAN_REMOTE_VIDEO_URL`.
+
 On the ROS machine, start:
 
 ```bash
