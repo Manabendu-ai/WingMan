@@ -1,0 +1,96 @@
+"""Lidar ICP odometry + RTAB-Map mapping + RViz2.
+  ros2 launch ~/ws_wingman/launch/lidar_slam.launch.py scan_kind:=scan planar:=true lidar_frame:=<frame_id>
+Needs scripts/bridge_lidar.sh running. Package names assume rtabmap_ros >= 0.21 (rtabmap_odom / rtabmap_slam)."""
+import os
+from launch import LaunchDescription
+from launch.actions import DeclareLaunchArgument, OpaqueFunction
+from launch.substitutions import LaunchConfiguration
+from launch_ros.actions import Node
+ 
+ 
+def _setup(context):
+    kind = LaunchConfiguration('scan_kind').perform(context)       # scan | cloud
+    planar = LaunchConfiguration('planar').perform(context).lower() == 'true'
+    lidar_frame = LaunchConfiguration('lidar_frame').perform(context)
+    x, y, z = LaunchConfiguration('lidar_xyz').perform(context).split()
+    use_rviz = LaunchConfiguration('rviz').perform(context).lower() == 'true'
+    rviz_cfg = LaunchConfiguration('rviz_config').perform(context)
+ 
+    sim = {'use_sim_time': True}
+    in_topic = 'scan' if kind == 'scan' else 'scan_cloud'
+ 
+    static_tf = Node(
+        package='tf2_ros', executable='static_transform_publisher',
+        arguments=['--x', x, '--y', y, '--z', z, '--roll', '0', '--pitch', '0', '--yaw', '0',
+                   '--frame-id', 'base_link', '--child-frame-id', lidar_frame],
+        parameters=[sim])
+
+    icp = {
+        **sim,
+        'frame_id': 'base_link',
+        'odom_frame_id': 'odom',
+        'publish_tf': True,
+        'wait_for_transform': 0.2,
+        'Reg/Strategy': '1',
+        'Reg/Force3DoF': 'true' if planar else 'false',
+        'Icp/MaxTranslation': '0.2',
+        'Icp/CorrespondenceRatio': '0.1',  # Lowered to 0.1 so it doesn't drop scans instantly
+        'Icp/VoxelSize': '0.05',
+        'Icp/PointToPlane': 'true',
+        'Icp/PointToPlaneMinComplexity': '0.0',
+        'Odom/ResetCountdown': '1',
+    }
+    icp_odom = Node(
+        package='rtabmap_odom', executable='icp_odometry', name='icp_odometry', output='screen',
+        parameters=[icp], remappings=[(in_topic, '/scan'), ('odom', '/odom')])
+
+    slam_params = {
+        **sim,
+        'frame_id': 'base_link',
+        'odom_frame_id': 'odom',
+        'map_frame_id': 'map',
+        'publish_tf': True,
+        'tf_delay': 0.05,
+        'tf_tolerance': 0.1,
+        'subscribe_depth': False,
+        'subscribe_rgb': False,
+        'subscribe_scan': kind == 'scan',
+        'subscribe_scan_cloud': kind == 'cloud',
+        'approx_sync': True,
+        'queue_size': 10,
+        'database_path': '/tmp/maze_rtabmap.db',
+        'Reg/Strategy': '1',
+        'Reg/Force3DoF': 'true' if planar else 'false',
+        'Grid/Sensor': '0',
+        'Grid/CellSize': '0.05',
+        'Grid/RangeMax': '12.0',
+        'Grid/RayTracing': 'true',
+        'RGBD/ProximityBySpace': 'true',
+        'RGBD/OptimizeMaxError': '1.0',
+        'Icp/VoxelSize': '0.05',
+    }
+    slam = Node(
+        package='rtabmap_slam', executable='rtabmap', name='rtabmap', output='screen',
+        parameters=[slam_params],
+        remappings=[(in_topic, '/scan'), ('odom', '/odom')],
+        arguments=['-d'])
+ 
+    nodes = [static_tf, icp_odom, slam]
+    if use_rviz:
+        nodes.append(Node(package='rviz2', executable='rviz2', arguments=['-d', rviz_cfg],
+                          parameters=[sim], additional_env={'QT_QPA_PLATFORM': 'xcb'}))
+    return nodes
+ 
+ 
+def generate_launch_description():
+    here = os.path.dirname(os.path.realpath(__file__))
+    return LaunchDescription([
+        DeclareLaunchArgument('scan_kind', default_value='scan'),
+        DeclareLaunchArgument('planar', default_value='true'),
+        DeclareLaunchArgument('lidar_frame', default_value='lidar_link'),
+        DeclareLaunchArgument('lidar_xyz', default_value='0 0 0.12'),
+        DeclareLaunchArgument('rviz', default_value='true'),
+        DeclareLaunchArgument('rviz_config',
+                              default_value=os.path.join(here, '..', 'config', 'rviz', 'maze_nav2.rviz')),
+        OpaqueFunction(function=_setup),
+    ])
