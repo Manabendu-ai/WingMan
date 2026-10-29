@@ -30,9 +30,10 @@ then open the dashboard with:
 http://DASHBOARD_HOST:8000/?ros_ws=ws%3A%2F%2FROS_HOST%3A9090&video=http%3A%2F%2FROS_HOST%3A8080%2Fstream%3Ftopic%3D%252Fcamera%252Fcolor%252Fimage_raw
 ```
 
-In this mode the site is read-only. It displays the remote RGB stream, map,
-odometry/PX4 telemetry, RGB-D metadata, and stale-data health. Mission
-commands remain disabled until the ROS command interfaces are finalized.
+In this mode the site displays the remote RGB stream, map, odometry/PX4
+telemetry, mission status, command acknowledgements, VLM observations, and
+stale-data health. Commands remain disabled unless
+`--enable-remote-commands` is explicitly used.
 
 For the currently available camera stream, run the dashboard on the laptop
 with:
@@ -45,6 +46,20 @@ python -m wingman_dashboard --mock \
 
 Then open `http://127.0.0.1:8000/`. The remote video URL can also be supplied
 with `WINGMAN_REMOTE_VIDEO_URL`.
+
+To connect the mission box to the command gateway:
+
+```bash
+python -m wingman_dashboard --mock \
+  --host 0.0.0.0 \
+  --remote-video 'http://192.168.128.220:8080/stream?topic=/world/maze_exploration/model/x500_gps_denied_0/link/camera_link/sensor/IMX214/image' \
+  --remote-ros-ws 'ws://192.168.128.220:9090' \
+  --enable-remote-commands
+```
+
+Submitting the mission box publishes `{"id":"<generated>","prompt":"<text>"}`
+to `/wingman/llm_command`. The ABORT button publishes a `hover` command.
+Acknowledgements from `/wingman/llm_command_ack` are shown in the mission log.
 
 On the ROS machine, start:
 
