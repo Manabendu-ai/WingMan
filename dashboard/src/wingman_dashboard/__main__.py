@@ -33,6 +33,8 @@ def main():
                     help="remote web_video_server stream URL")
     ap.add_argument("--remote-ros-ws", default=os.getenv("WINGMAN_REMOTE_ROS_WS", ""),
                     help="remote rosbridge WebSocket URL")
+    ap.add_argument("--enable-remote-commands", action="store_true",
+                    help="allow the browser to publish /wingman/llm_command")
     a = ap.parse_args()
 
     if a.mock_llm or a.mock:
@@ -62,7 +64,8 @@ def main():
     app = create_app(
         MissionManager(llm, link, hub), ReplayCamera(hub), mapsrc, token,
         docs=a.docs, remote_video_url=a.remote_video,
-        remote_ros_url=a.remote_ros_ws)
+        remote_ros_url=a.remote_ros_ws,
+        remote_commands=a.enable_remote_commands)
     print(f"\n  WINGMAN dashboard on http://{a.host}:{a.port}/?token={token}")
     if a.docs:
         print(f"  API docs:  http://{a.host}:{a.port}/docs   (click Authorize, paste the token)")
