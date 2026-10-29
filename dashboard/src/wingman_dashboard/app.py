@@ -28,7 +28,7 @@ class AnswerBody(BaseModel):
 
 def create_app(manager: MissionManager, camera, mapsrc, token: str,
                docs: bool = False, remote_video_url: str = "",
-               remote_ros_url: str = "") -> FastAPI:
+               remote_ros_url: str = "", remote_commands: bool = False) -> FastAPI:
     app = FastAPI(title="WINGMAN dashboard", redoc_url=None,
                   docs_url="/docs" if docs else None,
                   openapi_url="/openapi.json" if docs else None)
@@ -122,6 +122,8 @@ def create_app(manager: MissionManager, camera, mapsrc, token: str,
                                 json.dumps(remote_video_url))
             html = html.replace("__WINGMAN_REMOTE_ROS__",
                                 json.dumps(remote_ros_url))
+            html = html.replace("__WINGMAN_REMOTE_COMMANDS__",
+                                json.dumps(remote_commands))
             return HTMLResponse(html)
         return {"service": "wingman-dashboard", "frontend": "not installed yet"}
 
