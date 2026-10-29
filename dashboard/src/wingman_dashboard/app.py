@@ -1,10 +1,11 @@
 """FastAPI app. Every route needs the access token (header X-Token or ?token=)."""
 import asyncio
 import hmac
+import json
 from pathlib import Path
 
 from fastapi import Depends, FastAPI, HTTPException, Request, WebSocket, WebSocketDisconnect
-from fastapi.responses import FileResponse, StreamingResponse
+from fastapi.responses import HTMLResponse, StreamingResponse
 from fastapi.security import APIKeyHeader
 from pydantic import BaseModel, Field
 
@@ -25,7 +26,9 @@ class AnswerBody(BaseModel):
     text: str = Field(min_length=1, max_length=300)
 
 
-def create_app(manager: MissionManager, camera, mapsrc, token: str, docs: bool = False) -> FastAPI:
+def create_app(manager: MissionManager, camera, mapsrc, token: str,
+               docs: bool = False, remote_video_url: str = "",
+               remote_ros_url: str = "") -> FastAPI:
     app = FastAPI(title="WINGMAN dashboard", redoc_url=None,
                   docs_url="/docs" if docs else None,
                   openapi_url="/openapi.json" if docs else None)
@@ -114,7 +117,12 @@ def create_app(manager: MissionManager, camera, mapsrc, token: str, docs: bool =
     def index():
         page = STATIC / "index.html"
         if page.is_file():
-            return FileResponse(page)
+            html = page.read_text(encoding="utf-8")
+            html = html.replace("__WINGMAN_REMOTE_VIDEO__",
+                                json.dumps(remote_video_url))
+            html = html.replace("__WINGMAN_REMOTE_ROS__",
+                                json.dumps(remote_ros_url))
+            return HTMLResponse(html)
         return {"service": "wingman-dashboard", "frontend": "not installed yet"}
 
     return app

@@ -4,6 +4,10 @@ src/wingman_ground/llm_client.py
 src/wingman_ground/mission.py
 src/wingman_ground/planner.py
 src/wingman_ground/prompts.py
+src/wingman_ground/replan.py
+src/wingman_ground/replanner.py
+src/wingman_ground/report.py
+src/wingman_ground/session.py
 src/wingman_ground/validator.py
 src/wingman_ground.egg-info/PKG-INFO
 src/wingman_ground.egg-info/SOURCES.txt
@@ -13,3 +17,6 @@ src/wingman_ground.egg-info/top_level.txt
 tests/test_llm_client.py
 tests/test_mission.py
 tests/test_planner.py
+tests/test_replan.py
+tests/test_replanner.py
+tests/test_session.py
