@@ -8,3 +8,4 @@ src/wingman_onboard.egg-info/dependency_links.txt
 src/wingman_onboard.egg-info/requires.txt
 src/wingman_onboard.egg-info/top_level.txt
 tests/test_executor.py
+tests/test_sim.py
